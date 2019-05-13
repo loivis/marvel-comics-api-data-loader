@@ -4,16 +4,17 @@ import (
 	"context"
 	"log"
 
-	"github.com/loivis/mcapi-loader/mcapi"
+	mclient "github.com/loivis/mcapi-loader/marvel/client"
 	"github.com/loivis/mcapi-loader/process"
-	"github.com/loivis/pavium-api/store"
+	"github.com/loivis/mcapi-loader/store"
 )
 
 func main() {
 	ctx := context.Background()
-	client := mcapi.NewClient(conf.mcapiBaseURL, conf.mcapiPrivateKey, conf.mcapiPublicKey)
-	store := store.New()
-	p := process.NewProcessor(client, store)
+
+	mclient := mclient.New(nil, nil)
+	store := store.New("")
+	p := process.NewProcessor(mclient, store)
 
 	if err := p.Process(ctx); err != nil {
 		log.Fatal(err)

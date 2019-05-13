@@ -3,22 +3,22 @@ package process
 import (
 	"context"
 
-	"github.com/loivis/mcapi-loader/mcapi"
+	mclient "github.com/loivis/mcapi-loader/marvel/client"
 	"github.com/loivis/mcapi-loader/mcapiloader"
 )
 
 type Processor struct {
-	client *mcapi.Client
-	store  mcapiloader.Store
+	mclient *mclient.Marvel
+	store   mcapiloader.Store
 }
 
-func NewProcessor(c *mcapi.Client, s mcapiloader.Store) *Processor {
+func NewProcessor(mc *mclient.Marvel, s mcapiloader.Store) *Processor {
 	return &Processor{
-		client: c,
-		store:  s,
+		mclient: mc,
+		store:   s,
 	}
 }
 
-func Process(ctx context.Context) error {
+func (p *Processor) Process(ctx context.Context) error {
 	return nil
 }
