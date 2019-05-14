@@ -4,14 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"text/tabwriter"
 
 	"github.com/loivis/mcapi-loader/marvel/mclient"
+	"github.com/loivis/mcapi-loader/mongodb"
 	"github.com/loivis/mcapi-loader/process"
-	"github.com/loivis/mcapi-loader/store"
+	"github.com/rs/zerolog/log"
 )
 
 func main() {
@@ -20,26 +20,33 @@ func main() {
 
 	ctx := context.Background()
 
-	mc := mclient.Default
+	marvelClient := mclient.Default
 
-	store := store.New("")
+	mongodb, err := mongodb.New(conf.mongodbURI, conf.mongodbDatabase)
+	if err != nil {
+		log.Fatal().Msgf("failed to setup mongodb: %v", err)
+	}
 
-	p := process.NewProcessor(mc, store, conf.privateKey, conf.publicKey)
+	p := process.NewProcessor(marvelClient, mongodb, conf.privateKey, conf.publicKey)
 
 	if err := p.Process(ctx); err != nil {
-		log.Fatal(err)
+		log.Fatal().Msg(err.Error())
 	}
 }
 
 type config struct {
-	privateKey string
-	publicKey  string
+	mongodbDatabase string
+	mongodbURI      string
+	privateKey      string
+	publicKey       string
 }
 
 func readConfig() *config {
 	return &config{
-		privateKey: os.Getenv("MARVEL_API_PRIVATE_KEY"),
-		publicKey:  os.Getenv("MARVEL_API_PUBLIC_KEY"),
+		mongodbDatabase: os.Getenv("MONGODB_DATABASE"),
+		mongodbURI:      os.Getenv("MONGODB_URI"),
+		privateKey:      os.Getenv("MARVEL_API_PRIVATE_KEY"),
+		publicKey:       os.Getenv("MARVEL_API_PUBLIC_KEY"),
 	}
 }
 
@@ -70,6 +77,8 @@ func (c *config) String() string {
 		k string
 		v interface{}
 	}{
+		{"MONGODB_DATABASE", c.mongodbDatabase},
+		{"MONGODB_URI", c.mongodbURI},
 		{"MARVEL_API_PRIVATE_KEY", hideIfSet(c.privateKey)},
 		{"MARVEL_API_PUBLIC_KEY", c.publicKey},
 	} {
