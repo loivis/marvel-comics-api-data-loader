@@ -14,6 +14,27 @@
       "get": {
         "parameters": [
           {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
+          {
             "description": "Return only characters matching the specified full character name (e.g. Spider-Man).",
             "in": "query",
             "name": "name",
@@ -123,6 +144,27 @@
       "get": {
         "parameters": [
           {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
+          {
             "description": "A single character id.",
             "format": "int32",
             "in": "path",
@@ -147,6 +189,27 @@
     "/v1/public/characters/{characterId}/comics": {
       "get": {
         "parameters": [
+          {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
           {
             "description": "The character id.",
             "format": "int32",
@@ -392,6 +455,27 @@
       "get": {
         "parameters": [
           {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
+          {
             "description": "The character ID.",
             "format": "int32",
             "in": "path",
@@ -508,6 +592,27 @@
     "/v1/public/characters/{characterId}/series": {
       "get": {
         "parameters": [
+          {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
           {
             "description": "The character ID",
             "format": "int32",
@@ -651,6 +756,27 @@
       "get": {
         "parameters": [
           {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
+          {
             "description": "The character ID.",
             "format": "int32",
             "in": "path",
@@ -753,6 +879,27 @@
     "/v1/public/comics": {
       "get": {
         "parameters": [
+          {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
           {
             "description": "Filter by the issue format (e.g. comic, digital comic, hardcover).",
             "in": "query",
@@ -1001,6 +1148,27 @@
       "get": {
         "parameters": [
           {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
+          {
             "description": "A single comic.",
             "format": "int32",
             "in": "path",
@@ -1025,6 +1193,27 @@
     "/v1/public/comics/{comicId}/characters": {
       "get": {
         "parameters": [
+          {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
           {
             "description": "The comic id.",
             "format": "int32",
@@ -1131,6 +1320,27 @@
     "/v1/public/comics/{comicId}/creators": {
       "get": {
         "parameters": [
+          {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
           {
             "description": "The comic id.",
             "format": "int32",
@@ -1280,6 +1490,27 @@
       "get": {
         "parameters": [
           {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
+          {
             "description": "The comic ID.",
             "format": "int32",
             "in": "path",
@@ -1397,6 +1628,27 @@
       "get": {
         "parameters": [
           {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
+          {
             "description": "The comic ID.",
             "format": "int32",
             "in": "path",
@@ -1499,6 +1751,27 @@
     "/v1/public/creators": {
       "get": {
         "parameters": [
+          {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
           {
             "description": "Filter by creator first name (e.g. Brian).",
             "in": "query",
@@ -1651,6 +1924,27 @@
       "get": {
         "parameters": [
           {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
+          {
             "description": "A single creator id.",
             "format": "int32",
             "in": "path",
@@ -1675,6 +1969,27 @@
     "/v1/public/creators/{creatorId}/comics": {
       "get": {
         "parameters": [
+          {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
           {
             "description": "The creator ID.",
             "format": "int32",
@@ -1923,6 +2238,27 @@
       "get": {
         "parameters": [
           {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
+          {
             "description": "The creator ID.",
             "format": "int32",
             "in": "path",
@@ -2039,6 +2375,27 @@
     "/v1/public/creators/{creatorId}/series": {
       "get": {
         "parameters": [
+          {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
           {
             "description": "The creator ID.",
             "format": "int32",
@@ -2182,6 +2539,27 @@
       "get": {
         "parameters": [
           {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
+          {
             "description": "The ID of the creator.",
             "format": "int32",
             "in": "path",
@@ -2284,6 +2662,27 @@
     "/v1/public/events": {
       "get": {
         "parameters": [
+          {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
           {
             "description": "Return only events which match the specified name.",
             "in": "query",
@@ -2405,6 +2804,27 @@
       "get": {
         "parameters": [
           {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
+          {
             "description": "A single event.",
             "format": "int32",
             "in": "path",
@@ -2429,6 +2849,27 @@
     "/v1/public/events/{eventId}/characters": {
       "get": {
         "parameters": [
+          {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
           {
             "description": "The event ID",
             "format": "int32",
@@ -2535,6 +2976,27 @@
     "/v1/public/events/{eventId}/comics": {
       "get": {
         "parameters": [
+          {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
           {
             "description": "The event id.",
             "format": "int32",
@@ -2800,6 +3262,27 @@
       "get": {
         "parameters": [
           {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
+          {
             "description": "The event ID.",
             "format": "int32",
             "in": "path",
@@ -2948,6 +3431,27 @@
       "get": {
         "parameters": [
           {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
+          {
             "description": "The event ID.",
             "format": "int32",
             "in": "path",
@@ -3090,6 +3594,27 @@
       "get": {
         "parameters": [
           {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
+          {
             "description": "The ID of the event.",
             "format": "int32",
             "in": "path",
@@ -3192,6 +3717,27 @@
     "/v1/public/series": {
       "get": {
         "parameters": [
+          {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
           {
             "description": "Return only series matching the specified title.",
             "in": "query",
@@ -3338,6 +3884,27 @@
       "get": {
         "parameters": [
           {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
+          {
             "description": "Filter by series title.",
             "format": "int32",
             "in": "path",
@@ -3362,6 +3929,27 @@
     "/v1/public/series/{seriesId}/characters": {
       "get": {
         "parameters": [
+          {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
           {
             "description": "The series id.",
             "format": "int32",
@@ -3468,6 +4056,27 @@
     "/v1/public/series/{seriesId}/comics": {
       "get": {
         "parameters": [
+          {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
           {
             "description": "The series ID.",
             "format": "int32",
@@ -3722,6 +4331,27 @@
       "get": {
         "parameters": [
           {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
+          {
             "description": "The series ID.",
             "format": "int32",
             "in": "path",
@@ -3870,6 +4500,27 @@
       "get": {
         "parameters": [
           {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
+          {
             "description": "The series ID.",
             "format": "int32",
             "in": "path",
@@ -3987,6 +4638,27 @@
       "get": {
         "parameters": [
           {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
+          {
             "description": "The series ID.",
             "format": "int32",
             "in": "path",
@@ -4089,6 +4761,27 @@
     "/v1/public/stories": {
       "get": {
         "parameters": [
+          {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
           {
             "description": "Return only stories which have been modified since the specified date.",
             "format": "date",
@@ -4196,6 +4889,27 @@
       "get": {
         "parameters": [
           {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
+          {
             "description": "Filter by story id.",
             "format": "int32",
             "in": "path",
@@ -4220,6 +4934,27 @@
     "/v1/public/stories/{storyId}/characters": {
       "get": {
         "parameters": [
+          {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
           {
             "description": "The story ID.",
             "format": "int32",
@@ -4326,6 +5061,27 @@
     "/v1/public/stories/{storyId}/comics": {
       "get": {
         "parameters": [
+          {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
           {
             "description": "The story ID.",
             "format": "int32",
@@ -4580,6 +5336,27 @@
       "get": {
         "parameters": [
           {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
+          {
             "description": "The story ID.",
             "format": "int32",
             "in": "path",
@@ -4728,6 +5505,27 @@
       "get": {
         "parameters": [
           {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
+          {
             "description": "The story ID.",
             "format": "int32",
             "in": "path",
@@ -4844,6 +5642,27 @@
     "/v1/public/stories/{storyId}/series": {
       "get": {
         "parameters": [
+          {
+            "description": "[Auth] timestamp",
+            "in": "query",
+            "name": "ts",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] public apikey",
+            "in": "query",
+            "name": "apikey",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+            "in": "query",
+            "name": "hash",
+            "required": true,
+            "type": "string"
+          },
           {
             "description": "The story ID.",
             "format": "int32",
@@ -5006,7 +5825,6 @@
         },
         "modified": {
           "description": "The date the resource was most recently modified.",
-          "format": "date",
           "type": "string"
         },
         "name": {
@@ -5226,7 +6044,6 @@
         },
         "modified": {
           "description": "The date the resource was most recently modified.",
-          "format": "date",
           "type": "string"
         },
         "pageCount": {
@@ -5360,7 +6177,6 @@
       "properties": {
         "date": {
           "description": "The date.",
-          "format": "date",
           "type": "string"
         },
         "type": {
@@ -5452,7 +6268,6 @@
         },
         "modified": {
           "description": "The date the resource was most recently modified.",
-          "format": "date",
           "type": "string"
         },
         "resourceURI": {
@@ -5609,7 +6424,6 @@
         },
         "end": {
           "description": "The date of publication of the last issue in this event.",
-          "format": "date",
           "type": "string"
         },
         "id": {
@@ -5619,7 +6433,6 @@
         },
         "modified": {
           "description": "The date the resource was most recently modified.",
-          "format": "date",
           "type": "string"
         },
         "next": {
@@ -5640,7 +6453,6 @@
         },
         "start": {
           "description": "The date of publication of the first issue in this event.",
-          "format": "date",
           "type": "string"
         },
         "stories": {
@@ -5811,7 +6623,6 @@
         },
         "modified": {
           "description": "The date the resource was most recently modified.",
-          "format": "date",
           "type": "string"
         },
         "next": {
@@ -5986,7 +6797,6 @@
         },
         "modified": {
           "description": "The date the resource was most recently modified.",
-          "format": "date",
           "type": "string"
         },
         "originalissue": {

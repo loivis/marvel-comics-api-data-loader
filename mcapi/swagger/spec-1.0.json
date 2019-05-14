@@ -53,6 +53,30 @@
           ],
           "parameters": [
             {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
               "name": "name",
               "description": "Return only characters matching the specified full character name (e.g. Spider-Man).",
               "dataType": "string",
@@ -183,6 +207,30 @@
           ],
           "parameters": [
             {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
               "name": "characterId",
               "description": "A single character id.",
               "dataType": "int",
@@ -244,6 +292,30 @@
             }
           ],
           "parameters": [
+            {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
             {
               "name": "characterId",
               "description": "The character id.",
@@ -610,6 +682,30 @@
           ],
           "parameters": [
             {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
               "name": "characterId",
               "description": "The character ID.",
               "dataType": "int",
@@ -780,6 +876,30 @@
             }
           ],
           "parameters": [
+            {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
             {
               "name": "characterId",
               "description": "The character ID",
@@ -1003,6 +1123,30 @@
           ],
           "parameters": [
             {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
               "name": "characterId",
               "description": "The character ID.",
               "dataType": "int",
@@ -1153,6 +1297,30 @@
             }
           ],
           "parameters": [
+            {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
             {
               "name": "format",
               "description": "Filter by the issue format (e.g. comic, digital comic, hardcover).",
@@ -1489,6 +1657,30 @@
           ],
           "parameters": [
             {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
               "name": "comicId",
               "description": "A single comic.",
               "dataType": "int",
@@ -1550,6 +1742,30 @@
             }
           ],
           "parameters": [
+            {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
             {
               "name": "comicId",
               "description": "The comic id.",
@@ -1710,6 +1926,30 @@
             }
           ],
           "parameters": [
+            {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
             {
               "name": "comicId",
               "description": "The comic id.",
@@ -1931,6 +2171,30 @@
           ],
           "parameters": [
             {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
               "name": "comicId",
               "description": "The comic ID.",
               "dataType": "int",
@@ -2102,6 +2366,30 @@
           ],
           "parameters": [
             {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
               "name": "comicId",
               "description": "The comic ID.",
               "dataType": "int",
@@ -2252,6 +2540,30 @@
             }
           ],
           "parameters": [
+            {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
             {
               "name": "firstName",
               "description": "Filter by creator first name (e.g. Brian).",
@@ -2443,6 +2755,30 @@
           ],
           "parameters": [
             {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
               "name": "creatorId",
               "description": "A single creator id.",
               "dataType": "int",
@@ -2504,6 +2840,30 @@
             }
           ],
           "parameters": [
+            {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
             {
               "name": "creatorId",
               "description": "The creator ID.",
@@ -2870,6 +3230,30 @@
           ],
           "parameters": [
             {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
               "name": "creatorId",
               "description": "The creator ID.",
               "dataType": "int",
@@ -3040,6 +3424,30 @@
             }
           ],
           "parameters": [
+            {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
             {
               "name": "creatorId",
               "description": "The creator ID.",
@@ -3263,6 +3671,30 @@
           ],
           "parameters": [
             {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
               "name": "creatorId",
               "description": "The ID of the creator.",
               "dataType": "int",
@@ -3414,6 +3846,30 @@
           ],
           "parameters": [
             {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
               "name": "name",
               "description": "Return only events which match the specified name.",
               "dataType": "string",
@@ -3555,6 +4011,30 @@
           ],
           "parameters": [
             {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
               "name": "eventId",
               "description": "A single event.",
               "dataType": "int",
@@ -3616,6 +4096,30 @@
             }
           ],
           "parameters": [
+            {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
             {
               "name": "eventId",
               "description": "The event ID",
@@ -3776,6 +4280,30 @@
             }
           ],
           "parameters": [
+            {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
             {
               "name": "eventId",
               "description": "The event id.",
@@ -4151,6 +4679,30 @@
           ],
           "parameters": [
             {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
               "name": "eventId",
               "description": "The event ID.",
               "dataType": "int",
@@ -4370,6 +4922,30 @@
             }
           ],
           "parameters": [
+            {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
             {
               "name": "eventId",
               "description": "The event ID.",
@@ -4593,6 +5169,30 @@
           ],
           "parameters": [
             {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
               "name": "eventId",
               "description": "The ID of the event.",
               "dataType": "int",
@@ -4743,6 +5343,30 @@
             }
           ],
           "parameters": [
+            {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
             {
               "name": "title",
               "description": "Return only series matching the specified title.",
@@ -4936,6 +5560,30 @@
           ],
           "parameters": [
             {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
               "name": "seriesId",
               "description": "Filter by series title.",
               "dataType": "int",
@@ -4997,6 +5645,30 @@
             }
           ],
           "parameters": [
+            {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
             {
               "name": "seriesId",
               "description": "The series id.",
@@ -5157,6 +5829,30 @@
             }
           ],
           "parameters": [
+            {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
             {
               "name": "seriesId",
               "description": "The series ID.",
@@ -5523,6 +6219,30 @@
           ],
           "parameters": [
             {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
               "name": "seriesId",
               "description": "The series ID.",
               "dataType": "int",
@@ -5743,6 +6463,30 @@
           ],
           "parameters": [
             {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
               "name": "seriesId",
               "description": "The series ID.",
               "dataType": "int",
@@ -5914,6 +6658,30 @@
           ],
           "parameters": [
             {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
               "name": "seriesId",
               "description": "The series ID.",
               "dataType": "int",
@@ -6065,6 +6833,30 @@
           ],
           "parameters": [
             {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
               "name": "modifiedSince",
               "description": "Return only stories which have been modified since the specified date.",
               "dataType": "Date",
@@ -6186,6 +6978,30 @@
           ],
           "parameters": [
             {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
               "name": "storyId",
               "description": "Filter by story id.",
               "dataType": "int",
@@ -6247,6 +7063,30 @@
             }
           ],
           "parameters": [
+            {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
             {
               "name": "storyId",
               "description": "The story ID.",
@@ -6407,6 +7247,30 @@
             }
           ],
           "parameters": [
+            {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
             {
               "name": "storyId",
               "description": "The story ID.",
@@ -6773,6 +7637,30 @@
           ],
           "parameters": [
             {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
               "name": "storyId",
               "description": "The story ID.",
               "dataType": "int",
@@ -6993,6 +7881,30 @@
           ],
           "parameters": [
             {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
               "name": "storyId",
               "description": "The story ID.",
               "dataType": "int",
@@ -7163,6 +8075,30 @@
             }
           ],
           "parameters": [
+            {
+              "name": "ts",
+              "description": "[Auth] timestamp",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "apikey",
+              "description": "[Auth] public apikey",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
+            {
+              "name": "hash",
+              "description": "[Auth] md5 digest of concatenation of ts, private key, public key",
+              "dataType": "string",
+              "paramType": "query",
+              "allowMultiple": false,
+              "required": true
+            },
             {
               "name": "storyId",
               "description": "The story ID.",
@@ -7607,7 +8543,7 @@
           "description": "A description of the date (e.g. onsale date, FOC date)."
         },
         "date": {
-          "type": "Date",
+          "type": "string",
           "description": "The date."
         }
       }
@@ -7742,7 +8678,7 @@
           "description": "The full name of the creator (a space-separated concatenation of the above four fields)."
         },
         "modified": {
-          "type": "Date",
+          "type": "string",
           "description": "The date the resource was most recently modified."
         },
         "resourceURI": {
@@ -7805,15 +8741,15 @@
           }
         },
         "modified": {
-          "type": "Date",
+          "type": "string",
           "description": "The date the resource was most recently modified."
         },
         "start": {
-          "type": "Date",
+          "type": "string",
           "description": "The date of publication of the first issue in this event."
         },
         "end": {
-          "type": "Date",
+          "type": "string",
           "description": "The date of publication of the last issue in this event."
         },
         "thumbnail": {
@@ -7977,7 +8913,7 @@
           "description": "A short bio or description of the character."
         },
         "modified": {
-          "type": "Date",
+          "type": "string",
           "description": "The date the resource was most recently modified."
         },
         "resourceURI": {
@@ -8118,7 +9054,7 @@
           "description": "The age-appropriateness rating for the series."
         },
         "modified": {
-          "type": "Date",
+          "type": "string",
           "description": "The date the resource was most recently modified."
         },
         "thumbnail": {
@@ -8272,7 +9208,7 @@
           "description": "The preferred description of the comic."
         },
         "modified": {
-          "type": "Date",
+          "type": "string",
           "description": "The date the resource was most recently modified."
         },
         "isbn": {
@@ -8441,7 +9377,7 @@
           "description": "The story type e.g. interior story, cover, text story."
         },
         "modified": {
-          "type": "Date",
+          "type": "string",
           "description": "The date the resource was most recently modified."
         },
         "thumbnail": {
