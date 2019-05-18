@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/loivis/mcapi-loader/mcapiloader"
+
 	"github.com/rs/zerolog/log"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -55,6 +57,57 @@ func (m *MongoDB) GetCount(collection string) (count int64, err error) {
 	col := m.client.Database(m.database).Collection(collection)
 
 	return col.CountDocuments(ctx, bsonx.Doc{})
+}
+
+func (m *MongoDB) IncompleteCharacterIDs() ([]int32, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
+	defer cancel()
+
+	col := m.client.Database(m.database).Collection(string(ColCharacters))
+
+	cur, err := col.Find(ctx,
+		bson.D{{Key: "intact", Value: false}},
+		options.Find().SetProjection(bson.D{{Key: "id", Value: 1}}),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error finding incomplete characters: %v", err)
+	}
+
+	var ids []int32
+
+	for cur.Next(ctx) {
+		var elem struct{ ID int32 }
+		err := cur.Decode(&elem)
+		if err != nil {
+			return nil, fmt.Errorf("error decoding character: %v", err)
+		}
+
+		ids = append(ids, elem.ID)
+	}
+
+	if err := cur.Err(); err != nil {
+		return nil, fmt.Errorf("error decoding all characters: %v", err)
+	}
+
+	cur.Close(ctx)
+
+	return ids, nil
+}
+
+func (m *MongoDB) SaveCharacter(char *mcapiloader.Character) error {
+	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
+	defer cancel()
+
+	col := m.client.Database(m.database).Collection(string(ColCharacters))
+
+	result, err := col.ReplaceOne(ctx, bson.D{{Key: "id", Value: char.ID}}, char)
+	if err != nil {
+		return err
+	}
+
+	log.Info().Interface("result", result).Int32("id", char.ID).Msg("character document replaced")
+
+	return nil
 }
 
 func (m *MongoDB) SaveCharacters(chars []*mcapiloader.Character) error {

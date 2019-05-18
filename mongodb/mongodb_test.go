@@ -74,6 +74,24 @@ func TestMongoDB_GetAllIDs(t *testing.T) {
 	}
 }
 
+func TestMongoDB_IncompleteCharacterIDs(t *testing.T) {
+	m, _, err := setupDatabase("marvel_test", string(ColCharacters))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	defer m.client.Database("marvel_test").Drop(context.Background())
+
+	si, err := m.IncompleteCharacterIDs()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if got, want := len(si), 1; got != want {
+		t.Errorf("got %d ids, want %d", got, want)
+	}
+}
+
 func setupDatabase(database, collection string) (*MongoDB, []interface{}, error) {
 	m, err := New("mongodb://localhost:27017", database)
 	if err != nil {
@@ -86,7 +104,18 @@ func setupDatabase(database, collection string) (*MongoDB, []interface{}, error)
 
 	docs := []interface{}{}
 	for i := 0; i < 77; i++ {
-		docs = append(docs, struct{ ID int }{i})
+		if i == 0 {
+			docs = append(docs, &mcapiloader.Character{
+				ID:     int32(i),
+				Intact: false,
+			})
+			continue
+		}
+
+		docs = append(docs, &mcapiloader.Character{
+			ID:     int32(i),
+			Intact: true,
+		})
 	}
 
 	m.client.Database(database).Collection(collection).InsertMany(

@@ -22,6 +22,8 @@ type Processor struct {
 	limit      int32
 
 	store mcapiloader.Store
+
+	concurrency int
 }
 
 func NewProcessor(mc *mclient.Marvel, s mcapiloader.Store, private, public string) *Processor {
@@ -33,6 +35,8 @@ func NewProcessor(mc *mclient.Marvel, s mcapiloader.Store, private, public strin
 		limit:      100,
 
 		store: s,
+
+		concurrency: 20,
 	}
 }
 
