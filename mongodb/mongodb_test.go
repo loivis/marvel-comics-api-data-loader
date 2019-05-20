@@ -126,7 +126,7 @@ func setupDatabase(database, collection string) (*MongoDB, []interface{}, error)
 	return m, docs, nil
 }
 
-func TestDiff(t *testing.T) {
+func TestDiffCharacters(t *testing.T) {
 	for _, tc := range []struct {
 		desc  string
 		ids   []int32
@@ -153,7 +153,7 @@ func TestDiff(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			gotChars := diff(tc.ids, tc.chars)
+			gotChars := diffCharacters(tc.ids, tc.chars)
 
 			if got, want := len(gotChars), len(tc.out); got != want {
 				t.Fatalf("[%s] got %d chars, want %d", tc.desc, got, want)
@@ -169,7 +169,7 @@ func TestDiff(t *testing.T) {
 	}
 }
 
-func BenchmarkDiff(b *testing.B) {
+func BenchmarkDiffCharacters(b *testing.B) {
 	s1 := []int32{}
 	s2 := []*m27r.Character{}
 	for i := 0; i < 5000; i++ {
@@ -178,7 +178,7 @@ func BenchmarkDiff(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		diff(s1, s2)
+		diffCharacters(s1, s2)
 	}
 	// 100: BenchmarkDiff-4   	  200000	      6282 ns/op	    1046 B/op	       6 allocs/op
 	// 1000: BenchmarkDiff-4   	   30000	     48931 ns/op	   13721 B/op	       6 allocs/op

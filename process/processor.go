@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/loivis/marvel-comics-api-data-loader/marvel/mclient"
 	"github.com/loivis/marvel-comics-api-data-loader/m27r"
+	"github.com/loivis/marvel-comics-api-data-loader/marvel/mclient"
 )
 
 type Processor struct {
@@ -39,7 +39,14 @@ func NewProcessor(mc *mclient.Marvel, s m27r.Store, private, public string) *Pro
 }
 
 func (p *Processor) Process(ctx context.Context) error {
-	err := p.loadCharacters(ctx)
+	var err error
+
+	// err = p.loadCharacters(ctx)
+	// if err != nil {
+	// 	return err
+	// }
+
+	err = p.loadComics(ctx)
 	if err != nil {
 		return err
 	}

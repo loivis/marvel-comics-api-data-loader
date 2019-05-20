@@ -11,6 +11,7 @@ type Store interface {
 	IncompleteCharacterIDs() ([]int32, error)
 	SaveCharacter(char *Character) error
 	SaveCharacters(chars []*Character) error
+	SaveComics(comics []*Comic) error
 }
 
 type Params interface {

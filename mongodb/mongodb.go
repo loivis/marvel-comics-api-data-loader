@@ -20,6 +20,7 @@ type CollectionName string
 
 var (
 	ColCharacters CollectionName = "characters"
+	ColComics     CollectionName = "comics"
 )
 
 type MongoDB struct {
@@ -118,7 +119,11 @@ func (m *MongoDB) SaveCharacters(chars []*m27r.Character) error {
 		return err
 	}
 
-	newChars := diff(ids, chars)
+	newChars := diffCharacters(ids, chars)
+	if len(newChars) == 0 {
+		log.Info().Msg("no new characters to save")
+		return nil
+	}
 
 	docs := []interface{}{}
 	for _, char := range newChars {
@@ -126,12 +131,44 @@ func (m *MongoDB) SaveCharacters(chars []*m27r.Character) error {
 	}
 
 	col := m.client.Database(m.database).Collection(string(ColCharacters))
-	result, err := col.InsertMany(ctx, docs)
+	_, err = col.InsertMany(ctx, docs)
 	if err != nil {
 		return err
 	}
 
-	log.Info().Interface("result", result).Int("count", len(docs)).Msg("new characters saved")
+	log.Info().Int("count", len(docs)).Msg("new characters saved")
+
+	return nil
+}
+
+func (m *MongoDB) SaveComics(comics []*m27r.Comic) error {
+	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
+	defer cancel()
+
+	ids, err := m.getAllIds(ctx, ColComics)
+	if err != nil {
+		return err
+	}
+
+	newComics := diffComics(ids, comics)
+
+	if len(newComics) == 0 {
+		log.Info().Msg("no new comics to save")
+		return nil
+	}
+
+	docs := []interface{}{}
+	for _, comic := range newComics {
+		docs = append(docs, comic)
+	}
+
+	col := m.client.Database(m.database).Collection(string(ColComics))
+	_, err = col.InsertMany(ctx, docs)
+	if err != nil {
+		return err
+	}
+
+	log.Info().Int("count", len(docs)).Msg("new comics saved")
 
 	return nil
 }
@@ -193,7 +230,7 @@ func (m *MongoDB) getAllIds(ctx context.Context, collection CollectionName) ([]i
 	return ids, nil
 }
 
-func diff(ids []int32, chars []*m27r.Character) []*m27r.Character {
+func diffCharacters(ids []int32, chars []*m27r.Character) []*m27r.Character {
 	m := make(map[int32]struct{}, len(ids))
 	for i := range ids {
 		m[ids[i]] = struct{}{}
@@ -205,6 +242,24 @@ func diff(ids []int32, chars []*m27r.Character) []*m27r.Character {
 			continue
 		}
 		r = append(r, chars[i])
+	}
+
+	return r
+}
+
+func diffComics(ids []int32, comics []*m27r.Comic) []*m27r.Comic {
+	log.Info().Int("count", len(ids)).Int("comics", len(comics)).Msg("diff comics")
+	m := make(map[int32]struct{}, len(ids))
+	for i := range ids {
+		m[ids[i]] = struct{}{}
+	}
+
+	r := []*m27r.Comic{}
+	for i := range comics {
+		if _, ok := m[comics[i].ID]; ok {
+			continue
+		}
+		r = append(r, comics[i])
 	}
 
 	return r
