@@ -12,8 +12,6 @@ import (
 	"github.com/loivis/mcapi-loader/mcapiloader"
 )
 
-const marvelComicsAPIPrefix = "http://gateway.marvel.com/v1/public/"
-
 type Processor struct {
 	mclient    *mclient.Marvel
 	privateKey string
