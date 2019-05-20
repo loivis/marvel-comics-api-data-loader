@@ -481,7 +481,7 @@ func convertCharacter(in *models.Character) (*mcapiloader.Character, error) {
 		ID:          in.ID,
 		Modified:    in.Modified,
 		Name:        in.Name,
-		Thumbnail:   in.Thumbnail.Path + "." + in.Thumbnail.Extension,
+		Thumbnail:   strings.Replace(in.Thumbnail.Path+"."+in.Thumbnail.Extension, "http://", "https://", 1),
 	}
 
 	for _, item := range in.Comics.Items {
@@ -523,7 +523,7 @@ func convertCharacter(in *models.Character) (*mcapiloader.Character, error) {
 	for _, url := range in.Urls {
 		out.URLs = append(out.URLs, &mcapiloader.URL{
 			Type: url.Type,
-			URL:  strings.Split(url.URL, "?")[0],
+			URL:  strings.Replace(strings.Split(url.URL, "?")[0], "http://", "https://", 1),
 		})
 	}
 
