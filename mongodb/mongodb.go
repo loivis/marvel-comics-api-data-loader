@@ -12,7 +12,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"go.mongodb.org/mongo-driver/x/bsonx"
 )
 
 var defaultTimeout time.Duration = 5 * time.Second
@@ -56,7 +55,7 @@ func (m *MongoDB) GetCount(collection string) (count int64, err error) {
 
 	col := m.client.Database(m.database).Collection(collection)
 
-	return col.CountDocuments(ctx, bsonx.Doc{})
+	return col.CountDocuments(ctx, bson.D{})
 }
 
 func (m *MongoDB) IncompleteCharacterIDs() ([]int32, error) {
@@ -127,12 +126,12 @@ func (m *MongoDB) SaveCharacters(chars []*mcapiloader.Character) error {
 	}
 
 	col := m.client.Database(m.database).Collection(string(ColCharacters))
-	_, err = col.InsertMany(ctx, docs)
+	result, err := col.InsertMany(ctx, docs)
 	if err != nil {
 		return err
 	}
 
-	log.Info().Int("count", len(docs)).Msg("new characters saved")
+	log.Info().Interface("result", result).Int("count", len(docs)).Msg("new characters saved")
 
 	return nil
 }
@@ -169,7 +168,7 @@ func (m *MongoDB) getAllIds(ctx context.Context, collection CollectionName) ([]i
 
 	col := m.client.Database(m.database).Collection(string(collection))
 
-	cur, err := col.Find(ctx, bsonx.Doc{}, options.Find())
+	cur, err := col.Find(ctx, bson.D{})
 	if err != nil {
 		return nil, fmt.Errorf("error finding documents: %v", err)
 	}
