@@ -8,9 +8,9 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/loivis/mcapi-loader/marvel/mclient"
-	"github.com/loivis/mcapi-loader/mongodb"
-	"github.com/loivis/mcapi-loader/process"
+	"github.com/loivis/marvel-comics-api-data-loader/marvel/mclient"
+	"github.com/loivis/marvel-comics-api-data-loader/mongodb"
+	"github.com/loivis/marvel-comics-api-data-loader/process"
 	"github.com/rs/zerolog/log"
 )
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/loivis/mcapi-loader/mcapiloader"
+	"github.com/loivis/marvel-comics-api-data-loader/m27r"
 )
 
 func TestMongoDB_GetCount(t *testing.T) {
@@ -105,14 +105,14 @@ func setupDatabase(database, collection string) (*MongoDB, []interface{}, error)
 	docs := []interface{}{}
 	for i := 0; i < 77; i++ {
 		if i == 0 {
-			docs = append(docs, &mcapiloader.Character{
+			docs = append(docs, &m27r.Character{
 				ID:     int32(i),
 				Intact: false,
 			})
 			continue
 		}
 
-		docs = append(docs, &mcapiloader.Character{
+		docs = append(docs, &m27r.Character{
 			ID:     int32(i),
 			Intact: true,
 		})
@@ -130,26 +130,26 @@ func TestDiff(t *testing.T) {
 	for _, tc := range []struct {
 		desc  string
 		ids   []int32
-		chars []*mcapiloader.Character
-		out   []*mcapiloader.Character
+		chars []*m27r.Character
+		out   []*m27r.Character
 	}{
 		{
 			desc:  "NoDiff",
 			ids:   []int32{1, 2, 3, 4},
-			chars: []*mcapiloader.Character{{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4}},
-			out:   []*mcapiloader.Character{},
+			chars: []*m27r.Character{{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4}},
+			out:   []*m27r.Character{},
 		},
 		{
 			desc:  "LessIncoming",
 			ids:   []int32{1, 2, 3, 4},
-			chars: []*mcapiloader.Character{{ID: 1}, {ID: 2}},
-			out:   []*mcapiloader.Character{},
+			chars: []*m27r.Character{{ID: 1}, {ID: 2}},
+			out:   []*m27r.Character{},
 		},
 		{
 			desc:  "MoreInt32",
 			ids:   []int32{1, 2, 3, 4, 5, 6},
-			chars: []*mcapiloader.Character{{ID: 1}, {ID: 2}, {ID: 8}, {ID: 3}, {ID: 4}, {ID: 7}, {ID: 9}},
-			out:   []*mcapiloader.Character{{ID: 8}, {ID: 7}, {ID: 9}},
+			chars: []*m27r.Character{{ID: 1}, {ID: 2}, {ID: 8}, {ID: 3}, {ID: 4}, {ID: 7}, {ID: 9}},
+			out:   []*m27r.Character{{ID: 8}, {ID: 7}, {ID: 9}},
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
@@ -171,10 +171,10 @@ func TestDiff(t *testing.T) {
 
 func BenchmarkDiff(b *testing.B) {
 	s1 := []int32{}
-	s2 := []*mcapiloader.Character{}
+	s2 := []*m27r.Character{}
 	for i := 0; i < 5000; i++ {
 		s1 = append(s1, int32(i))
-		s2 = append(s2, &mcapiloader.Character{ID: int32(i)})
+		s2 = append(s2, &m27r.Character{ID: int32(i)})
 	}
 
 	for i := 0; i < b.N; i++ {

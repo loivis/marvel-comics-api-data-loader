@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/loivis/mcapi-loader/marvel/mclient"
-	"github.com/loivis/mcapi-loader/mcapiloader"
+	"github.com/loivis/marvel-comics-api-data-loader/marvel/mclient"
+	"github.com/loivis/marvel-comics-api-data-loader/m27r"
 )
 
 type Processor struct {
@@ -19,12 +19,12 @@ type Processor struct {
 	timeout    time.Duration
 	limit      int32
 
-	store mcapiloader.Store
+	store m27r.Store
 
 	concurrency int
 }
 
-func NewProcessor(mc *mclient.Marvel, s mcapiloader.Store, private, public string) *Processor {
+func NewProcessor(mc *mclient.Marvel, s m27r.Store, private, public string) *Processor {
 	return &Processor{
 		mclient:    mc,
 		privateKey: private,
@@ -47,7 +47,7 @@ func (p *Processor) Process(ctx context.Context) error {
 	return nil
 }
 
-func (p *Processor) setParams(ctx context.Context, params mcapiloader.Params) {
+func (p *Processor) setParams(ctx context.Context, params m27r.Params) {
 	ts := fmt.Sprintf("%d", time.Now().Unix())
 	params.SetApikey(p.publicKey)
 	params.SetContext(ctx)

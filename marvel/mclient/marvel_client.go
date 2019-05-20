@@ -11,7 +11,7 @@ import (
 
 	strfmt "github.com/go-openapi/strfmt"
 
-	"github.com/loivis/mcapi-loader/marvel/mclient/operations"
+	"github.com/loivis/marvel-comics-api-data-loader/marvel/mclient/operations"
 )
 
 // Default marvel HTTP client.

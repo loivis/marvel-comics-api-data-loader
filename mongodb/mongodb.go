@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/loivis/mcapi-loader/mcapiloader"
+	"github.com/loivis/marvel-comics-api-data-loader/m27r"
 
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/bson"
@@ -93,7 +93,7 @@ func (m *MongoDB) IncompleteCharacterIDs() ([]int32, error) {
 	return ids, nil
 }
 
-func (m *MongoDB) SaveCharacter(char *mcapiloader.Character) error {
+func (m *MongoDB) SaveCharacter(char *m27r.Character) error {
 	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
 	defer cancel()
 
@@ -109,7 +109,7 @@ func (m *MongoDB) SaveCharacter(char *mcapiloader.Character) error {
 	return nil
 }
 
-func (m *MongoDB) SaveCharacters(chars []*mcapiloader.Character) error {
+func (m *MongoDB) SaveCharacters(chars []*m27r.Character) error {
 	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
 	defer cancel()
 
@@ -193,13 +193,13 @@ func (m *MongoDB) getAllIds(ctx context.Context, collection CollectionName) ([]i
 	return ids, nil
 }
 
-func diff(ids []int32, chars []*mcapiloader.Character) []*mcapiloader.Character {
+func diff(ids []int32, chars []*m27r.Character) []*m27r.Character {
 	m := make(map[int32]struct{}, len(ids))
 	for i := range ids {
 		m[ids[i]] = struct{}{}
 	}
 
-	r := []*mcapiloader.Character{}
+	r := []*m27r.Character{}
 	for i := range chars {
 		if _, ok := m[chars[i].ID]; ok {
 			continue

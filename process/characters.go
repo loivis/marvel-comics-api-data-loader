@@ -9,9 +9,9 @@ import (
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/loivis/mcapi-loader/marvel/mclient/operations"
-	"github.com/loivis/mcapi-loader/marvel/models"
-	"github.com/loivis/mcapi-loader/mcapiloader"
+	"github.com/loivis/marvel-comics-api-data-loader/m27r"
+	"github.com/loivis/marvel-comics-api-data-loader/marvel/mclient/operations"
+	"github.com/loivis/marvel-comics-api-data-loader/marvel/models"
 )
 
 func (p *Processor) loadCharacters(ctx context.Context) error {
@@ -81,8 +81,8 @@ func (p *Processor) getCharacterCount(ctx context.Context) (int32, error) {
 	return col.Payload.Data.Total, nil
 }
 
-func (p *Processor) getAllCharacters(ctx context.Context, count int32) ([]*mcapiloader.Character, error) {
-	chars := make([]*mcapiloader.Character, count)
+func (p *Processor) getAllCharacters(ctx context.Context, count int32) ([]*m27r.Character, error) {
+	chars := make([]*m27r.Character, count)
 
 	var g errgroup.Group
 
@@ -109,8 +109,8 @@ func (p *Processor) getAllCharacters(ctx context.Context, count int32) ([]*mcapi
 	return chars, nil
 }
 
-func (p *Processor) getPagedCharacters(ctx context.Context, offset int32) ([]*mcapiloader.Character, error) {
-	chars := []*mcapiloader.Character{}
+func (p *Processor) getPagedCharacters(ctx context.Context, offset int32) ([]*m27r.Character, error) {
+	chars := []*m27r.Character{}
 
 	params := &operations.GetCharactersCollectionParams{
 		Limit:  &p.limit,
@@ -172,7 +172,7 @@ func (p *Processor) complementAllCharacters(ctx context.Context) error {
 	return nil
 }
 
-func (p *Processor) getCharacterWithFullInfo(ctx context.Context, id int32) (*mcapiloader.Character, error) {
+func (p *Processor) getCharacterWithFullInfo(ctx context.Context, id int32) (*m27r.Character, error) {
 	params := &operations.GetCharacterIndividualParams{
 		CharacterID: id,
 	}
@@ -475,8 +475,8 @@ func (p *Processor) getCharacterStories(ctx context.Context, id, count int32) ([
 	return stories, nil
 }
 
-func convertCharacter(in *models.Character) (*mcapiloader.Character, error) {
-	out := &mcapiloader.Character{
+func convertCharacter(in *models.Character) (*m27r.Character, error) {
+	out := &m27r.Character{
 		Description: in.Description,
 		ID:          in.ID,
 		Modified:    in.Modified,
@@ -521,7 +521,7 @@ func convertCharacter(in *models.Character) (*mcapiloader.Character, error) {
 	}
 
 	for _, url := range in.Urls {
-		out.URLs = append(out.URLs, &mcapiloader.URL{
+		out.URLs = append(out.URLs, &m27r.URL{
 			Type: url.Type,
 			URL:  strings.Replace(strings.Split(url.URL, "?")[0], "http://", "https://", 1),
 		})

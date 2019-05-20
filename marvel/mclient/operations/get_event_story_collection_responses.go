@@ -13,7 +13,7 @@ import (
 
 	strfmt "github.com/go-openapi/strfmt"
 
-	models "github.com/loivis/mcapi-loader/marvel/models"
+	models "github.com/loivis/marvel-comics-api-data-loader/marvel/models"
 )
 
 // GetEventStoryCollectionReader is a Reader for the GetEventStoryCollection structure.

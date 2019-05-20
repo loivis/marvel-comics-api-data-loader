@@ -1,4 +1,4 @@
-package mcapiloader
+package m27r
 
 type Character struct {
 	Intact bool // indicator if any data missing

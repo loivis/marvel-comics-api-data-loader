@@ -13,7 +13,7 @@ import (
 
 	strfmt "github.com/go-openapi/strfmt"
 
-	models "github.com/loivis/mcapi-loader/marvel/models"
+	models "github.com/loivis/marvel-comics-api-data-loader/marvel/models"
 )
 
 // GetCreatorCollectionByEventIDReader is a Reader for the GetCreatorCollectionByEventID structure.
