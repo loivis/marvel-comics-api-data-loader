@@ -1,49 +1,49 @@
 package m27r
 
 type Character struct {
-	Intact bool // indicator if any data missing
+	Intact bool `json:"intact"` // indicator if any data missing
 
-	Comics      []int32 // list of comic id
-	Description string  // short bio or description
-	Events      []int32 // list of event id
-	ID          int32
-	Modified    string
-	Name        string
-	Series      []int32 // list of series id
-	Stories     []int32 // list of story id
-	Thumbnail   string  // url of thumbnail image
-	URLs        []*URL  // list of resource urls
+	Comics      []int32 `json:"comics"`      // list of comic id
+	Description string  `json:"description"` // short bio or description
+	Events      []int32 `json:"events"`      // list of event id
+	ID          int32   `json:"id"`
+	Modified    string  `json:"modified"`
+	Name        string  `json:"name"`
+	Series      []int32 `json:"series"`    // list of series id
+	Stories     []int32 `json:"stories"`   // list of story id
+	Thumbnail   string  `json:"thumbnail"` // url of thumbnail image
+	URLs        []*URL  `json:"urls"`      // list of resource urls
 }
 
 type Comic struct {
-	Intact bool // indicator if any data missing
+	Intact bool `bson:"intact"` // indicator if any data missing
 
-	Characters         []int32 // list of character id
-	CollectedIssues    []int32 // list of comic id
-	Collections        []int32 // list of comic id
-	Creators           []int32 // list of creator id
-	Dates              []*ComicDate
-	Description        string
-	DigitalID          int32
-	EAN                string
-	Events             []int32 // list of event id
-	Format             string
-	ID                 int32
-	Images             []string
-	ISSN               string
-	IssueNumber        float64
-	Modified           string
-	PageCount          int32
-	Prices             []*ComicPrice
-	SeriesID           int32
-	Stories            []int32 // list of story id
-	TextObjects        []*TextObject
-	Thumbnail          string // url of thumbnail image
-	Title              string
-	UPC                string
-	URLs               []*URL // list of resource urls
-	VariantDescription string
-	Variants           []int32 // list of comic id
+	Characters         []int32       `bson:"characters"`       // list of character id
+	CollectedIssues    []int32       `bson:"collected_issues"` // list of comic id
+	Collections        []int32       `bson:"collections"`      // list of comic id
+	Creators           []int32       `bson:"creators"`         // list of creator id
+	Dates              []*ComicDate  `bson:"dates"`
+	Description        string        `bson:"description"`
+	DigitalID          int32         `bson:"digital_id"`
+	EAN                string        `bson:"ean"`
+	Events             []int32       `bson:"events"` // list of event id
+	Format             string        `bson:"format"`
+	ID                 int32         `bson:"id"`
+	Images             []string      `bson:"images"`
+	ISSN               string        `bson:"issn"`
+	IssueNumber        float64       `bson:"issue_number"`
+	Modified           string        `bson:"modified"`
+	PageCount          int32         `bson:"page_count"`
+	Prices             []*ComicPrice `bson:"prices"`
+	SeriesID           int32         `bson:"series_id"`
+	Stories            []int32       `bson:"stories"` // list of story id
+	TextObjects        []*TextObject `bson:"text_objects"`
+	Thumbnail          string        `bson:"thumbnail"` // url of thumbnail image
+	Title              string        `bson:"title"`
+	UPC                string        `bson:"upc"`
+	URLs               []*URL        `bson:"urls"` // list of resource urls
+	VariantDescription string        `bson:"variant_description"`
+	Variants           []int32       `bson:"variants"` // list of comic id
 }
 
 type ComicDate struct {
