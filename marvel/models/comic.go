@@ -36,9 +36,6 @@ type Comic struct {
 	// The preferred description of the comic.
 	Description string `json:"description,omitempty"`
 
-	// The Diamond code for the comic.
-	DiamondCode string `json:"diamondCode,omitempty"`
-
 	// The ID of the digital comic representation of this comic. Will be 0 if the comic is not available digitally.
 	DigitalID int32 `json:"digitalId,omitempty"`
 
@@ -56,9 +53,6 @@ type Comic struct {
 
 	// A list of promotional images associated with this comic.
 	Images []*Image `json:"images"`
-
-	// The ISBN for the comic (generally only populated for collection formats).
-	Isbn string `json:"isbn,omitempty"`
 
 	// The ISSN barcode for the comic.
 	Issn string `json:"issn,omitempty"`

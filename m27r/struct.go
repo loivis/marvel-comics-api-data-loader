@@ -24,14 +24,12 @@ type Comic struct {
 	Creators           []int32 // list of creator id
 	Dates              []*ComicDate
 	Description        string
-	DiamondCode        string
 	DigitalID          int32
 	EAN                string
 	Events             []int32 // list of event id
 	Format             string
 	ID                 int32
 	Images             []string
-	ISBN               string
 	ISSN               string
 	IssueNumber        float64
 	Modified           string

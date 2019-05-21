@@ -5996,10 +5996,6 @@
           "description": "The preferred description of the comic.",
           "type": "string"
         },
-        "diamondCode": {
-          "description": "The Diamond code for the comic.",
-          "type": "string"
-        },
         "digitalId": {
           "description": "The ID of the digital comic representation of this comic. Will be 0 if the comic is not available digitally.",
           "format": "int32",
@@ -6028,10 +6024,6 @@
             "$ref": "#/definitions/Image"
           },
           "type": "array"
-        },
-        "isbn": {
-          "description": "The ISBN for the comic (generally only populated for collection formats).",
-          "type": "string"
         },
         "issn": {
           "description": "The ISSN barcode for the comic.",
