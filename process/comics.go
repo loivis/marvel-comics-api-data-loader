@@ -2,15 +2,15 @@ package process
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
+
+	"github.com/rs/zerolog/log"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/loivis/marvel-comics-api-data-loader/m27r"
 	"github.com/loivis/marvel-comics-api-data-loader/marvel/mclient/operations"
 	"github.com/loivis/marvel-comics-api-data-loader/marvel/models"
-	"github.com/rs/zerolog/log"
-	"golang.org/x/sync/errgroup"
 )
 
 func (p *Processor) loadComics(ctx context.Context) error {
@@ -87,7 +87,6 @@ func (p *Processor) getComicCount(ctx context.Context) (int32, error) {
 
 // assume that results in response from /v1/public/comics is ordered list
 // so we can start from where we don't have data.
-// ISSUE: id=39237 has "diamondCode": 0, which should be string
 func (p *Processor) getAllComics(ctx context.Context, starting int32, count int32) ([]*m27r.Comic, error) {
 	var comics []*m27r.Comic
 
@@ -108,15 +107,7 @@ func (p *Processor) getAllComics(ctx context.Context, starting int32, count int3
 
 			col, err := p.mclient.Operations.GetComicsCollection(params)
 			if err != nil {
-				// ISSUE:
-				// Some json field is defined as string but number is returned instead.
-				// Such error is ignored, which means we lose all comics with the batch.
-				if _, ok := err.(*json.UnmarshalTypeError); ok {
-					log.Debug().Int32("offset", offset).Int32("limit", p.limit).Msgf("comic data lost due to: %v", err)
-					return nil
-				}
-
-				return err
+				return fmt.Errorf("error fetching with limit %d offset %d: %v", p.limit, offset, err)
 			}
 
 			for _, res := range col.Payload.Data.Results {
@@ -136,14 +127,7 @@ func (p *Processor) getAllComics(ctx context.Context, starting int32, count int3
 	}
 
 	if err := g.Wait(); err != nil {
-		// ISSUE:
-		// Some json field is defined as string but number is returned instead.
-		// Such error is ignored, which means we lose all 100 comics with the batch.
-		if _, ok := err.(*json.UnmarshalTypeError); !ok {
-			return nil, err
-		} else {
-			log.Debug().Msgf("comic data lost due to: %v", err)
-		}
+		return nil, err
 	}
 	close(comicCh)
 
