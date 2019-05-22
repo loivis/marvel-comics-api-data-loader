@@ -2,7 +2,9 @@ package process
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/rs/zerolog/log"
@@ -14,12 +16,19 @@ import (
 )
 
 func (p *Processor) loadComics(ctx context.Context) error {
-	err := p.loadAllComicsWithBasicInfo(ctx)
-	if err != nil {
-		return fmt.Errorf("error loading all comics info: %v", err)
-	}
+	var err error
 
-	log.Info().Msg("all comics loaded")
+	/*
+		there seems to be duplications in results while paging over /v1/public/comics.
+		44228 => 41868
+		skip load all comics based on comparison between api response and local storage.
+	*/
+	// err = p.loadAllComicsWithBasicInfo(ctx)
+	// if err != nil {
+	// 	return fmt.Errorf("error loading all comics info: %v", err)
+	// }
+
+	// log.Info().Msg("all comics loaded")
 
 	err = p.complementAllComics(ctx)
 	if err != nil {
@@ -32,11 +41,6 @@ func (p *Processor) loadComics(ctx context.Context) error {
 }
 
 func (p *Processor) loadAllComicsWithBasicInfo(ctx context.Context) error {
-	/*
-		should skip count comparison between api response and local storage.
-		there seems to be duplications in results while paging over /v1/public/comics.
-		MAYBE NOT? It might because of change on limit/offset.
-	*/
 	remote, err := p.getComicCount(ctx)
 	if err != nil {
 		return fmt.Errorf("error fetching comic count: %v", err)
@@ -139,7 +143,332 @@ func (p *Processor) getAllComics(ctx context.Context, starting int32, count int3
 }
 
 func (p *Processor) complementAllComics(ctx context.Context) error {
+	ids, err := p.store.IncompleteIDs("comics")
+	if err != nil {
+		return fmt.Errorf("error get imcomplete comic ids: %v", err)
+	}
+
+	if len(ids) == 0 {
+		log.Info().Msg("no incomplete comic")
+		return nil
+	}
+
+	log.Info().Int("count", len(ids)).Msg("fetched incomplete comic ids")
+
+	var g errgroup.Group
+
+	conCh := make(chan struct{}, p.concurrency)
+
+	for _, id := range ids {
+		conCh <- struct{}{}
+
+		id := id
+
+		g.Go(func() error {
+			comic, err := p.getComicWithFullInfo(ctx, id)
+			if err != nil {
+				return fmt.Errorf("error fetching comic %d: %v", id, err)
+			}
+
+			log.Info().Int32("id", id).Msgf("fetched comic with full info converted")
+
+			err = p.store.SaveComic(comic)
+			if err != nil {
+				return fmt.Errorf("error saving comic %d: %v", id, err)
+			}
+
+			log.Info().Int32("id", id).Msgf("saved comic")
+
+			log.Info().Int32("id", id).Msgf("complemented comic")
+
+			<-conCh
+
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return fmt.Errorf("error complementing comics: %v", err)
+	}
+
+	log.Info().Int("count", len(ids)).Msgf("complemented comics")
+
 	return nil
+}
+
+func (p *Processor) getComicWithFullInfo(ctx context.Context, id int32) (*m27r.Comic, error) {
+	params := &operations.GetComicIndividualParams{
+		ComicID: id,
+	}
+	p.setParams(ctx, params)
+
+	indiv, err := p.mclient.Operations.GetComicIndividual(params)
+	if err != nil {
+
+		return nil, fmt.Errorf("error fetching comic %d: %v", id, err)
+	}
+
+	log.Info().Int32("id", id).Msg("fetched comic with basic info")
+
+	/*
+		skip verification all below AS responses may differ between
+		available returned from /v1/public/comics/{comicId}
+		and
+		total returned from /v1/public/comics/{comicId}/{characters/events/series/stories}
+	*/
+
+	comic := indiv.Payload.Data.Results[0]
+
+	if comic.Characters.Available != comic.Characters.Returned {
+		chars, err := p.getComicCharacters(ctx, id, comic.Characters.Available)
+		if err != nil {
+			return nil, fmt.Errorf("error fetching characters for comic %d: %v", id, err)
+		}
+
+		comic.Characters.Items = chars
+		comic.Characters.Returned = comic.Characters.Available
+	} else {
+		log.Info().Int32("id", id).Int32("count", comic.Characters.Available).Msg("comic has complete characters")
+	}
+
+	if comic.Creators.Available != comic.Creators.Returned {
+		creators, err := p.getComicCreators(ctx, id, comic.Creators.Available)
+		if err != nil {
+			return nil, fmt.Errorf("error fetching creators for comic %d: %v", id, err)
+		}
+
+		comic.Creators.Items = creators
+		comic.Creators.Returned = comic.Creators.Available
+	} else {
+		log.Info().Int32("id", id).Int32("count", comic.Creators.Available).Msg("comic has complete creators")
+	}
+
+	if comic.Events.Available != comic.Events.Returned {
+		events, err := p.getComicEvents(ctx, id, comic.Events.Available)
+		if err != nil {
+			return nil, fmt.Errorf("error fetching events for comic %d: %v", id, err)
+		}
+
+		comic.Events.Items = events
+		comic.Events.Returned = comic.Events.Available
+	} else {
+		log.Info().Int32("id", id).Int32("count", comic.Events.Available).Msg("comic has complete events")
+	}
+
+	if comic.Stories.Available != comic.Stories.Returned {
+		stories, err := p.getComicStories(ctx, id, comic.Stories.Available)
+		if err != nil {
+			return nil, fmt.Errorf("error fetching stories for comic %d: %v", id, err)
+		}
+
+		comic.Stories.Items = stories
+		comic.Stories.Returned = comic.Stories.Available
+	} else {
+		log.Info().Int32("id", id).Int32("count", comic.Stories.Available).Msg("comic has complete stories")
+	}
+
+	c, err := convertComic(comic)
+	if err != nil {
+		return nil, fmt.Errorf("error converting comic %d: %v", comic.ID, err)
+	}
+
+	return c, nil
+}
+
+func (p *Processor) getComicCharacters(ctx context.Context, id, count int32) ([]*models.CharacterSummary, error) {
+	var chars []*models.CharacterSummary
+
+	charCh := make(chan *models.CharacterSummary, count)
+	conCh := make(chan struct{}, p.concurrency)
+
+	var g errgroup.Group
+
+	for i := 0; i < int(count/p.limit)+1; i++ {
+		conCh <- struct{}{}
+		offset := p.limit * int32(i)
+
+		g.Go(func() error {
+			params := &operations.GetComicCharacterCollectionParams{
+				ComicID: id,
+				Limit:   &p.limit,
+				Offset:  &offset,
+			}
+			p.setParams(ctx, params)
+
+			col, err := p.mclient.Operations.GetComicCharacterCollection(params)
+			if err != nil {
+				return fmt.Errorf("error fetching character for comic %d, offset %d: %v", id, offset, err)
+			}
+
+			for _, char := range col.Payload.Data.Results {
+				charCh <- &models.CharacterSummary{Name: char.Name, ResourceURI: "fake-prefix/" + strconv.FormatInt(int64(char.ID), 10)}
+			}
+
+			<-conCh
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+	close(charCh)
+
+	for char := range charCh {
+		chars = append(chars, char)
+	}
+
+	log.Info().Int("count", len(chars)).Int32("comic_id", id).Msg("fetched chars for comic")
+
+	return chars, nil
+}
+
+func (p *Processor) getComicCreators(ctx context.Context, id, count int32) ([]*models.CreatorSummary, error) {
+	var creators []*models.CreatorSummary
+
+	creatorCh := make(chan *models.CreatorSummary, count)
+	conCh := make(chan struct{}, p.concurrency)
+
+	var g errgroup.Group
+
+	for i := 0; i < int(count/p.limit)+1; i++ {
+		conCh <- struct{}{}
+		offset := p.limit * int32(i)
+
+		g.Go(func() error {
+			params := &operations.GetCreatorCollectionByComicIDParams{
+				ComicID: id,
+				Limit:   &p.limit,
+				Offset:  &offset,
+			}
+			p.setParams(ctx, params)
+
+			col, err := p.mclient.Operations.GetCreatorCollectionByComicID(params)
+			if err != nil {
+				return fmt.Errorf("error fetching creators for comic %d, offset %d: %v", id, offset, err)
+			}
+
+			for _, creator := range col.Payload.Data.Results {
+				creatorCh <- &models.CreatorSummary{Name: creator.FullName, ResourceURI: "fake-prefix/" + strconv.FormatInt(int64(creator.ID), 10)}
+			}
+
+			<-conCh
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+	close(creatorCh)
+
+	for creator := range creatorCh {
+		creators = append(creators, creator)
+	}
+
+	log.Info().Int("count", len(creators)).Int32("comic_id", id).Msg("fetched creators for comic")
+
+	return creators, nil
+}
+
+func (p *Processor) getComicEvents(ctx context.Context, id, count int32) ([]*models.EventSummary, error) {
+	var events []*models.EventSummary
+
+	eventCh := make(chan *models.EventSummary, count)
+	conCh := make(chan struct{}, p.concurrency)
+
+	var g errgroup.Group
+
+	for i := 0; i < int(count/p.limit)+1; i++ {
+		conCh <- struct{}{}
+		offset := p.limit * int32(i)
+
+		g.Go(func() error {
+			params := &operations.GetIssueEventsCollectionParams{
+				ComicID: id,
+				Limit:   &p.limit,
+				Offset:  &offset,
+			}
+			p.setParams(ctx, params)
+
+			col, err := p.mclient.Operations.GetIssueEventsCollection(params)
+			if err != nil {
+				return fmt.Errorf("error fetching events for comic %d, offset %d: %v", id, offset, err)
+			}
+
+			for _, event := range col.Payload.Data.Results {
+				eventCh <- &models.EventSummary{Name: event.Title, ResourceURI: "fake-prefix/" + strconv.FormatInt(int64(event.ID), 10)}
+			}
+
+			<-conCh
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+	close(eventCh)
+
+	for event := range eventCh {
+		events = append(events, event)
+	}
+
+	log.Info().Int("count", len(events)).Int32("comic_id", id).Msg("fetched events for comic")
+
+	return events, nil
+}
+
+func (p *Processor) getComicStories(ctx context.Context, id, count int32) ([]*models.StorySummary, error) {
+	var stories []*models.StorySummary
+
+	storyCh := make(chan *models.StorySummary, count)
+	conCh := make(chan struct{}, p.concurrency)
+
+	var g errgroup.Group
+
+	for i := 0; i < int(count/p.limit)+1; i++ {
+		conCh <- struct{}{}
+		offset := p.limit * int32(i)
+
+		g.Go(func() error {
+			params := &operations.GetComicStoryCollectionParams{
+				ComicID: id,
+				Limit:   &p.limit,
+				Offset:  &offset,
+			}
+			p.setParams(ctx, params)
+
+			col, err := p.mclient.Operations.GetComicStoryCollection(params)
+			if err != nil {
+				if _, ok := err.(*json.UnmarshalTypeError); ok {
+					log.Error().Int32("comic_id", id).Msgf("error fetching stories for comic %d, offset %d: %v", id, offset, err)
+					return nil
+				}
+				return fmt.Errorf("error fetching stories for comic %d, offset %d: %v", id, offset, err)
+			}
+
+			for _, story := range col.Payload.Data.Results {
+				storyCh <- &models.StorySummary{Name: story.Title, ResourceURI: "fake-prefix/" + strconv.FormatInt(int64(story.ID), 10)}
+			}
+
+			<-conCh
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+	close(storyCh)
+
+	for story := range storyCh {
+		stories = append(stories, story)
+	}
+
+	log.Info().Int("count", len(stories)).Int32("comic_id", id).Msg("fetched stories for comic")
+
+	return stories, nil
 }
 
 func convertComic(in *models.Comic) (*m27r.Comic, error) {

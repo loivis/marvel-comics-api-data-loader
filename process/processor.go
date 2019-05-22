@@ -41,10 +41,10 @@ func NewProcessor(mc *mclient.Marvel, s m27r.Store, private, public string) *Pro
 func (p *Processor) Process(ctx context.Context) error {
 	var err error
 
-	// err = p.loadCharacters(ctx)
-	// if err != nil {
-	// 	return err
-	// }
+	err = p.loadCharacters(ctx)
+	if err != nil {
+		return err
+	}
 
 	err = p.loadComics(ctx)
 	if err != nil {

@@ -94,6 +94,41 @@ func (m *MongoDB) IncompleteCharacterIDs() ([]int32, error) {
 	return ids, nil
 }
 
+func (m *MongoDB) IncompleteIDs(collection string) ([]int32, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
+	defer cancel()
+
+	col := m.client.Database(m.database).Collection(collection)
+
+	cur, err := col.Find(ctx,
+		bson.D{{Key: "intact", Value: false}},
+		options.Find().SetProjection(bson.D{{Key: "id", Value: 1}}),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error finding incomplete documents: %v", err)
+	}
+
+	var ids []int32
+
+	for cur.Next(ctx) {
+		var elem struct{ ID int32 }
+		err := cur.Decode(&elem)
+		if err != nil {
+			return nil, fmt.Errorf("error decoding document: %v", err)
+		}
+
+		ids = append(ids, elem.ID)
+	}
+
+	if err := cur.Err(); err != nil {
+		return nil, fmt.Errorf("error decoding all documents: %v", err)
+	}
+
+	cur.Close(ctx)
+
+	return ids, nil
+}
+
 func (m *MongoDB) SaveCharacter(char *m27r.Character) error {
 	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
 	defer cancel()
@@ -137,6 +172,22 @@ func (m *MongoDB) SaveCharacters(chars []*m27r.Character) error {
 	}
 
 	log.Info().Int("count", len(docs)).Msg("new characters saved")
+
+	return nil
+}
+
+func (m *MongoDB) SaveComic(comic *m27r.Comic) error {
+	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
+	defer cancel()
+
+	col := m.client.Database(m.database).Collection(string(ColComics))
+
+	result, err := col.ReplaceOne(ctx, bson.D{{Key: "id", Value: comic.ID}}, comic)
+	if err != nil {
+		return err
+	}
+
+	log.Info().Interface("result", result).Int32("id", comic.ID).Msg("comic document replaced")
 
 	return nil
 }
