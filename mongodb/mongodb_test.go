@@ -151,6 +151,12 @@ func TestDiffCharacters(t *testing.T) {
 			chars: []*m27r.Character{{ID: 1}, {ID: 2}, {ID: 8}, {ID: 3}, {ID: 4}, {ID: 7}, {ID: 9}},
 			out:   []*m27r.Character{{ID: 8}, {ID: 7}, {ID: 9}},
 		},
+		{
+			desc:  "WithDuplicates",
+			ids:   []int32{1, 2, 3},
+			chars: []*m27r.Character{{ID: 1}, {ID: 2}, {ID: 4}, {ID: 3}, {ID: 4}},
+			out:   []*m27r.Character{{ID: 4}},
+		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			gotChars := diffCharacters(tc.ids, tc.chars)

@@ -237,10 +237,17 @@ func diffCharacters(ids []int32, chars []*m27r.Character) []*m27r.Character {
 	}
 
 	r := []*m27r.Character{}
+	seen := map[int32]struct{}{}
 	for i := range chars {
 		if _, ok := m[chars[i].ID]; ok {
 			continue
 		}
+
+		if _, ok := seen[chars[i].ID]; ok {
+			continue
+		}
+
+		seen[chars[i].ID] = struct{}{}
 		r = append(r, chars[i])
 	}
 
@@ -255,10 +262,17 @@ func diffComics(ids []int32, comics []*m27r.Comic) []*m27r.Comic {
 	}
 
 	r := []*m27r.Comic{}
+	seen := map[int32]struct{}{}
 	for i := range comics {
 		if _, ok := m[comics[i].ID]; ok {
 			continue
 		}
+
+		if _, ok := seen[comics[i].ID]; ok {
+			continue
+		}
+
+		seen[comics[i].ID] = struct{}{}
 		r = append(r, comics[i])
 	}
 
