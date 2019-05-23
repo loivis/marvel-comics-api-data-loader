@@ -38,7 +38,13 @@ MARVEL_API_PRIVATE_KEY="private_key" MARVE_API_PUBLIC_KEY="public_key" MONGODB_U
 
     + comic 1405 with `isbn` should be `string` but returns `number`
 
+    + story 30688 with `title` should be `string` but returns `number`
+
     + story 44568 with `title` should be `string` but returns `number`
+
+    + creator 9551 with `suffix` should be `string` but returns `number`
+
+    + creator 10669 with `lastName` should be `string` but returns `number`
 
     + and more ...
 

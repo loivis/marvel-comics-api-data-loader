@@ -1,18 +1,18 @@
 package m27r
 
 type Character struct {
-	Intact bool `json:"intact"` // indicator if any data missing
+	Intact bool `bson:"intact"` // indicator if any data missing
 
-	Comics      []int32 `json:"comics"`      // list of comic id
-	Description string  `json:"description"` // short bio or description
-	Events      []int32 `json:"events"`      // list of event id
-	ID          int32   `json:"id"`
-	Modified    string  `json:"modified"`
-	Name        string  `json:"name"`
-	Series      []int32 `json:"series"`    // list of series id
-	Stories     []int32 `json:"stories"`   // list of story id
-	Thumbnail   string  `json:"thumbnail"` // url of thumbnail image
-	URLs        []*URL  `json:"urls"`      // list of resource urls
+	Comics      []int32 `bson:"comics"`      // list of comic id
+	Description string  `bson:"description"` // short bio or description
+	Events      []int32 `bson:"events"`      // list of event id
+	ID          int32   `bson:"id"`
+	Modified    string  `bson:"modified"`
+	Name        string  `bson:"name"`
+	Series      []int32 `bson:"series"`    // list of series id
+	Stories     []int32 `bson:"stories"`   // list of story id
+	Thumbnail   string  `bson:"thumbnail"` // url of thumbnail image
+	URLs        []*URL  `bson:"urls"`      // list of resource urls
 }
 
 type Comic struct {
@@ -44,6 +44,24 @@ type Comic struct {
 	URLs               []*URL        `bson:"urls"` // list of resource urls
 	VariantDescription string        `bson:"variant_description"`
 	Variants           []int32       `bson:"variants"` // list of comic id
+}
+
+type Creator struct {
+	Intact bool `bson:"intact"` // indicator if any data missing
+
+	Comics     []int32 `bson:"comics"` // list of comic id
+	Events     []int32 `bson:"events"` // list of event id
+	FirtName   string  `bson:"firt_name"`
+	FullName   string  `bson:"full_name"`
+	ID         int32   `bson:"id"`
+	LastName   string  `bson:"last_name"`
+	MiddleName string  `bson:"middle_name"`
+	Modified   string  `bson:"modified"`
+	Series     []int32 `bson:"series"`  // list of series id
+	Stories    []int32 `bson:"stories"` // list of story id
+	Suffix     string  `bson:"suffix"`
+	Thumbnail  string  `bson:"thumbnail"` // url of thumbnail image
+	URLs       []*URL  `bson:"urls"`      // list of resource urls
 }
 
 type ComicDate struct {

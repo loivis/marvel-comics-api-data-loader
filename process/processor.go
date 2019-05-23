@@ -34,19 +34,24 @@ func NewProcessor(mc *mclient.Marvel, s m27r.Store, private, public string) *Pro
 
 		store: s,
 
-		concurrency: 20,
+		concurrency: 10,
 	}
 }
 
 func (p *Processor) Process(ctx context.Context) error {
 	var err error
 
-	err = p.loadCharacters(ctx)
-	if err != nil {
-		return err
-	}
+	// err = p.loadCharacters(ctx)
+	// if err != nil {
+	// 	return err
+	// }
 
-	err = p.loadComics(ctx)
+	// err = p.loadComics(ctx)
+	// if err != nil {
+	// 	return err
+	// }
+
+	err = p.loadCreators(ctx)
 	if err != nil {
 		return err
 	}

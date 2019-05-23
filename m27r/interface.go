@@ -14,6 +14,8 @@ type Store interface {
 	SaveCharacters(chars []*Character) error
 	SaveComic(comic *Comic) error
 	SaveComics(comics []*Comic) error
+	SaveCreator(creator *Creator) error
+	SaveCreators(creators []*Creator) error
 }
 
 type Params interface {

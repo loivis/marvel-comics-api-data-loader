@@ -21,6 +21,7 @@ type CollectionName string
 var (
 	ColCharacters CollectionName = "characters"
 	ColComics     CollectionName = "comics"
+	ColCreators   CollectionName = "creators"
 )
 
 type MongoDB struct {
@@ -224,6 +225,54 @@ func (m *MongoDB) SaveComics(comics []*m27r.Comic) error {
 	return nil
 }
 
+func (m *MongoDB) SaveCreator(comic *m27r.Creator) error {
+	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
+	defer cancel()
+
+	col := m.client.Database(m.database).Collection(string(ColCreators))
+
+	result, err := col.ReplaceOne(ctx, bson.D{{Key: "id", Value: comic.ID}}, comic)
+	if err != nil {
+		return err
+	}
+
+	log.Info().Interface("result", result).Int32("id", comic.ID).Msg("creator document replaced")
+
+	return nil
+}
+
+func (m *MongoDB) SaveCreators(creators []*m27r.Creator) error {
+	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
+	defer cancel()
+
+	ids, err := m.getAllIds(ctx, ColCreators)
+	if err != nil {
+		return err
+	}
+
+	newCreators := diffCreators(ids, creators)
+
+	if len(newCreators) == 0 {
+		log.Info().Msg("no new creators to save")
+		return nil
+	}
+
+	docs := []interface{}{}
+	for _, creator := range newCreators {
+		docs = append(docs, creator)
+	}
+
+	col := m.client.Database(m.database).Collection(string(ColCreators))
+	_, err = col.InsertMany(ctx, docs)
+	if err != nil {
+		return err
+	}
+
+	log.Info().Int("count", len(docs)).Msg("new creators saved")
+
+	return nil
+}
+
 // func (m *MongoDB) SaveIDs(collection string, ids []int32) error {
 // 	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
 // 	defer cancel()
@@ -282,6 +331,7 @@ func (m *MongoDB) getAllIds(ctx context.Context, collection CollectionName) ([]i
 }
 
 func diffCharacters(ids []int32, chars []*m27r.Character) []*m27r.Character {
+	log.Info().Int("count", len(ids)).Int("chars", len(chars)).Msg("diff chars")
 	m := make(map[int32]struct{}, len(ids))
 	for i := range ids {
 		m[ids[i]] = struct{}{}
@@ -325,6 +375,31 @@ func diffComics(ids []int32, comics []*m27r.Comic) []*m27r.Comic {
 
 		seen[comics[i].ID] = struct{}{}
 		r = append(r, comics[i])
+	}
+
+	return r
+}
+
+func diffCreators(ids []int32, creators []*m27r.Creator) []*m27r.Creator {
+	log.Info().Int("count", len(ids)).Int("creators", len(creators)).Msg("diff creators")
+	m := make(map[int32]struct{}, len(ids))
+	for i := range ids {
+		m[ids[i]] = struct{}{}
+	}
+
+	r := []*m27r.Creator{}
+	seen := map[int32]struct{}{}
+	for i := range creators {
+		if _, ok := m[creators[i].ID]; ok {
+			continue
+		}
+
+		if _, ok := seen[creators[i].ID]; ok {
+			continue
+		}
+
+		seen[creators[i].ID] = struct{}{}
+		r = append(r, creators[i])
 	}
 
 	return r

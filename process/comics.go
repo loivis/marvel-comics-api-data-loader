@@ -111,12 +111,14 @@ func (p *Processor) getAllComics(ctx context.Context, starting int32, count int3
 
 			col, err := p.mclient.Operations.GetComicsCollection(params)
 			if err != nil {
+				<-conCh
 				return fmt.Errorf("error fetching with limit %d offset %d: %v", p.limit, offset, err)
 			}
 
 			for _, res := range col.Payload.Data.Results {
 				comic, err := convertComic(res)
 				if err != nil {
+					<-conCh
 					return err
 				}
 
@@ -167,6 +169,7 @@ func (p *Processor) complementAllComics(ctx context.Context) error {
 		g.Go(func() error {
 			comic, err := p.getComicWithFullInfo(ctx, id)
 			if err != nil {
+				<-conCh
 				return fmt.Errorf("error fetching comic %d: %v", id, err)
 			}
 
@@ -174,6 +177,7 @@ func (p *Processor) complementAllComics(ctx context.Context) error {
 
 			err = p.store.SaveComic(comic)
 			if err != nil {
+				<-conCh
 				return fmt.Errorf("error saving comic %d: %v", id, err)
 			}
 
@@ -209,13 +213,6 @@ func (p *Processor) getComicWithFullInfo(ctx context.Context, id int32) (*m27r.C
 	}
 
 	log.Info().Int32("id", id).Msg("fetched comic with basic info")
-
-	/*
-		skip verification all below AS responses may differ between
-		available returned from /v1/public/comics/{comicId}
-		and
-		total returned from /v1/public/comics/{comicId}/{characters/events/series/stories}
-	*/
 
 	comic := indiv.Payload.Data.Results[0]
 
@@ -297,6 +294,7 @@ func (p *Processor) getComicCharacters(ctx context.Context, id, count int32) ([]
 
 			col, err := p.mclient.Operations.GetComicCharacterCollection(params)
 			if err != nil {
+				<-conCh
 				return fmt.Errorf("error fetching character for comic %d, offset %d: %v", id, offset, err)
 			}
 
@@ -345,6 +343,7 @@ func (p *Processor) getComicCreators(ctx context.Context, id, count int32) ([]*m
 
 			col, err := p.mclient.Operations.GetCreatorCollectionByComicID(params)
 			if err != nil {
+				<-conCh
 				return fmt.Errorf("error fetching creators for comic %d, offset %d: %v", id, offset, err)
 			}
 
@@ -393,6 +392,7 @@ func (p *Processor) getComicEvents(ctx context.Context, id, count int32) ([]*mod
 
 			col, err := p.mclient.Operations.GetIssueEventsCollection(params)
 			if err != nil {
+				<-conCh
 				return fmt.Errorf("error fetching events for comic %d, offset %d: %v", id, offset, err)
 			}
 
@@ -443,6 +443,7 @@ func (p *Processor) getComicStories(ctx context.Context, id, count int32) ([]*mo
 			if err != nil {
 				if _, ok := err.(*json.UnmarshalTypeError); ok {
 					log.Error().Int32("comic_id", id).Msgf("error fetching stories for comic %d, offset %d: %v", id, offset, err)
+					<-conCh
 					return nil
 				}
 				return fmt.Errorf("error fetching stories for comic %d, offset %d: %v", id, offset, err)
