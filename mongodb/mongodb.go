@@ -20,6 +20,7 @@ const (
 	ColCharacters = "characters"
 	ColComics     = "comics"
 	ColCreators   = "creators"
+	ColEvents     = "events"
 )
 
 type MongoDB struct {
@@ -129,6 +130,18 @@ func (m *MongoDB) SaveCreators(creators []*m27r.Creator) error {
 	return m.saveMany(ctx, docs)
 }
 
+func (m *MongoDB) SaveEvents(events []*m27r.Event) error {
+	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
+	defer cancel()
+
+	var docs []m27r.Doc
+	for _, event := range events {
+		docs = append(docs, event)
+	}
+
+	return m.saveMany(ctx, docs)
+}
+
 func (m *MongoDB) saveMany(ctx context.Context, docs []m27r.Doc) error {
 	if len(docs) == 0 {
 		log.Info().Msg("no docs to save")
@@ -144,6 +157,8 @@ func (m *MongoDB) saveMany(ctx context.Context, docs []m27r.Doc) error {
 		collection = ColComics
 	case *m27r.Creator:
 		collection = ColCreators
+	case *m27r.Event:
+		collection = ColEvents
 	}
 
 	ids, err := m.getAllIds(ctx, collection)

@@ -76,6 +76,30 @@ func (creator *Creator) Identify() int32 {
 	return creator.ID
 }
 
+type Event struct {
+	Intact bool `bson:"intact"` // indicator if any data missing
+
+	Characters  []int32 `bson:"characters"` // list of character id
+	Comics      []int32 `bson:"comics"`     // list of comic id
+	Creators    []int32 `bson:"creators"`   // list of creator id
+	Description string  `bson:"description"`
+	End         string  `bson:"end"` // The date of publication of the last issue in this event.
+	ID          int32   `bson:"id"`
+	Modified    string  `bson:"modified"`
+	Next        int32   `bson:"next"`      // id of the event which follows this event
+	Previous    int32   `bson:"previous"`  // id of the event which preceded this event
+	Series      []int32 `bson:"series"`    // list of series id
+	Start       string  `bson:"start"`     // The date of publication of the first issue in this event.
+	Stories     []int32 `bson:"stories"`   // list of story id
+	Thumbnail   string  `bson:"thumbnail"` // url of thumbnail image
+	Title       string  `bson:"title"`
+	URLs        []*URL  `bson:"urls"` // list of resource urls
+}
+
+func (event *Event) Identify() int32 {
+	return event.ID
+}
+
 type ComicDate struct {
 	Date string `bson:"date"`
 	Type string `bson:"type"`

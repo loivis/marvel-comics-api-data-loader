@@ -19,7 +19,8 @@ type Processor struct {
 	timeout    time.Duration
 	limit      int32
 
-	store m27r.Store
+	store      m27r.Store
+	storeBatch int
 
 	concurrency int
 }
@@ -32,7 +33,8 @@ func NewProcessor(mc *mclient.Marvel, s m27r.Store, private, public string) *Pro
 		timeout:    30 * time.Second,
 		limit:      100,
 
-		store: s,
+		store:      s,
+		storeBatch: 1000,
 
 		concurrency: 10,
 	}
@@ -51,7 +53,12 @@ func (p *Processor) Process(ctx context.Context) error {
 	// 	return err
 	// }
 
-	err = p.loadCreators(ctx)
+	// err = p.loadCreators(ctx)
+	// if err != nil {
+	// 	return err
+	// }
+
+	err = p.loadEvents(ctx)
 	if err != nil {
 		return err
 	}

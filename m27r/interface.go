@@ -12,6 +12,7 @@ type Store interface {
 	SaveCharacters(chars []*Character) error
 	SaveComics(comics []*Comic) error
 	SaveCreators(creators []*Creator) error
+	SaveEvents(creators []*Event) error
 	SaveOne(doc Doc) error
 }
 
