@@ -137,7 +137,7 @@ func (p *Processor) getPagedCharacters(ctx context.Context, offset int32) ([]*m2
 }
 
 func (p *Processor) complementAllCharacters(ctx context.Context) error {
-	ids, err := p.store.IncompleteCharacterIDs()
+	ids, err := p.store.IncompleteIDs("characters")
 	if err != nil {
 		return fmt.Errorf("error get imcomplete character ids: %v", err)
 	}
@@ -157,7 +157,7 @@ func (p *Processor) complementAllCharacters(ctx context.Context) error {
 
 		log.Info().Int32("id", id).Msgf("fetched character with full info converted")
 
-		err = p.store.SaveCharacter(char)
+		err = p.store.SaveOne(char)
 		if err != nil {
 			return fmt.Errorf("error saving character %d: %v", id, err)
 		}

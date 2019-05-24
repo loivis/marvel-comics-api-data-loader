@@ -15,6 +15,10 @@ type Character struct {
 	URLs        []*URL  `bson:"urls"`      // list of resource urls
 }
 
+func (char *Character) Identify() int32 {
+	return char.ID
+}
+
 type Comic struct {
 	Intact bool `bson:"intact"` // indicator if any data missing
 
@@ -46,6 +50,10 @@ type Comic struct {
 	Variants           []int32       `bson:"variants"` // list of comic id
 }
 
+func (comic *Comic) Identify() int32 {
+	return comic.ID
+}
+
 type Creator struct {
 	Intact bool `bson:"intact"` // indicator if any data missing
 
@@ -64,23 +72,27 @@ type Creator struct {
 	URLs       []*URL  `bson:"urls"`      // list of resource urls
 }
 
+func (creator *Creator) Identify() int32 {
+	return creator.ID
+}
+
 type ComicDate struct {
-	Date string
-	Type string
+	Date string `bson:"date"`
+	Type string `bson:"type"`
 }
 
 type ComicPrice struct {
-	Price float32
-	Type  string
+	Price float32 `bson:"price"`
+	Type  string  `bson:"type"`
 }
 
 type TextObject struct {
-	Language string
-	Text     string
-	Type     string
+	Language string `bson:"language"`
+	Text     string `bson:"text"`
+	Type     string `bson:"type"`
 }
 
 type URL struct {
-	Type string
-	URL  string
+	Type string `bson:"type"`
+	URL  string `bson:"url"`
 }

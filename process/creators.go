@@ -206,7 +206,7 @@ func (p *Processor) complementAllCreators(ctx context.Context) error {
 
 			log.Info().Int32("id", id).Msgf("fetched creator with full info converted")
 
-			err = p.store.SaveCreator(creator)
+			err = p.store.SaveOne(creator)
 			if err != nil {
 				<-conCh
 				return fmt.Errorf("error saving creator %d: %v", id, err)

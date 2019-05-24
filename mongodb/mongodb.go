@@ -16,12 +16,10 @@ import (
 
 var defaultTimeout time.Duration = 5 * time.Second
 
-type CollectionName string
-
-var (
-	ColCharacters CollectionName = "characters"
-	ColComics     CollectionName = "comics"
-	ColCreators   CollectionName = "creators"
+const (
+	ColCharacters = "characters"
+	ColComics     = "comics"
+	ColCreators   = "creators"
 )
 
 type MongoDB struct {
@@ -60,41 +58,6 @@ func (m *MongoDB) GetCount(collection string) (count int64, err error) {
 	return col.CountDocuments(ctx, bson.D{})
 }
 
-func (m *MongoDB) IncompleteCharacterIDs() ([]int32, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
-	defer cancel()
-
-	col := m.client.Database(m.database).Collection(string(ColCharacters))
-
-	cur, err := col.Find(ctx,
-		bson.D{{Key: "intact", Value: false}},
-		options.Find().SetProjection(bson.D{{Key: "id", Value: 1}}),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("error finding incomplete characters: %v", err)
-	}
-
-	var ids []int32
-
-	for cur.Next(ctx) {
-		var elem struct{ ID int32 }
-		err := cur.Decode(&elem)
-		if err != nil {
-			return nil, fmt.Errorf("error decoding character: %v", err)
-		}
-
-		ids = append(ids, elem.ID)
-	}
-
-	if err := cur.Err(); err != nil {
-		return nil, fmt.Errorf("error decoding all characters: %v", err)
-	}
-
-	cur.Close(ctx)
-
-	return ids, nil
-}
-
 func (m *MongoDB) IncompleteIDs(collection string) ([]int32, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
 	defer cancel()
@@ -130,177 +93,118 @@ func (m *MongoDB) IncompleteIDs(collection string) ([]int32, error) {
 	return ids, nil
 }
 
-func (m *MongoDB) SaveCharacter(char *m27r.Character) error {
-	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
-	defer cancel()
-
-	col := m.client.Database(m.database).Collection(string(ColCharacters))
-
-	result, err := col.ReplaceOne(ctx, bson.D{{Key: "id", Value: char.ID}}, char)
-	if err != nil {
-		return err
-	}
-
-	log.Info().Interface("result", result).Int32("id", char.ID).Msg("character document replaced")
-
-	return nil
-}
-
 func (m *MongoDB) SaveCharacters(chars []*m27r.Character) error {
 	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
 	defer cancel()
 
-	ids, err := m.getAllIds(ctx, ColCharacters)
-	if err != nil {
-		return err
-	}
-
-	newChars := diffCharacters(ids, chars)
-	if len(newChars) == 0 {
-		log.Info().Msg("no new characters to save")
-		return nil
-	}
-
-	docs := []interface{}{}
-	for _, char := range newChars {
+	var docs []m27r.Doc
+	for _, char := range chars {
 		docs = append(docs, char)
 	}
 
-	col := m.client.Database(m.database).Collection(string(ColCharacters))
-	_, err = col.InsertMany(ctx, docs)
-	if err != nil {
-		return err
-	}
-
-	log.Info().Int("count", len(docs)).Msg("new characters saved")
-
-	return nil
-}
-
-func (m *MongoDB) SaveComic(comic *m27r.Comic) error {
-	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
-	defer cancel()
-
-	col := m.client.Database(m.database).Collection(string(ColComics))
-
-	result, err := col.ReplaceOne(ctx, bson.D{{Key: "id", Value: comic.ID}}, comic)
-	if err != nil {
-		return err
-	}
-
-	log.Info().Interface("result", result).Int32("id", comic.ID).Msg("comic document replaced")
-
-	return nil
+	return m.saveMany(ctx, docs)
 }
 
 func (m *MongoDB) SaveComics(comics []*m27r.Comic) error {
 	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
 	defer cancel()
 
-	ids, err := m.getAllIds(ctx, ColComics)
-	if err != nil {
-		return err
-	}
-
-	newComics := diffComics(ids, comics)
-
-	if len(newComics) == 0 {
-		log.Info().Msg("no new comics to save")
-		return nil
-	}
-
-	docs := []interface{}{}
-	for _, comic := range newComics {
+	var docs []m27r.Doc
+	for _, comic := range comics {
 		docs = append(docs, comic)
 	}
 
-	col := m.client.Database(m.database).Collection(string(ColComics))
-	_, err = col.InsertMany(ctx, docs)
-	if err != nil {
-		return err
-	}
-
-	log.Info().Int("count", len(docs)).Msg("new comics saved")
-
-	return nil
-}
-
-func (m *MongoDB) SaveCreator(comic *m27r.Creator) error {
-	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
-	defer cancel()
-
-	col := m.client.Database(m.database).Collection(string(ColCreators))
-
-	result, err := col.ReplaceOne(ctx, bson.D{{Key: "id", Value: comic.ID}}, comic)
-	if err != nil {
-		return err
-	}
-
-	log.Info().Interface("result", result).Int32("id", comic.ID).Msg("creator document replaced")
-
-	return nil
+	return m.saveMany(ctx, docs)
 }
 
 func (m *MongoDB) SaveCreators(creators []*m27r.Creator) error {
 	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
 	defer cancel()
 
-	ids, err := m.getAllIds(ctx, ColCreators)
-	if err != nil {
-		return err
-	}
-
-	newCreators := diffCreators(ids, creators)
-
-	if len(newCreators) == 0 {
-		log.Info().Msg("no new creators to save")
-		return nil
-	}
-
-	docs := []interface{}{}
-	for _, creator := range newCreators {
+	var docs []m27r.Doc
+	for _, creator := range creators {
 		docs = append(docs, creator)
 	}
 
-	col := m.client.Database(m.database).Collection(string(ColCreators))
-	_, err = col.InsertMany(ctx, docs)
+	return m.saveMany(ctx, docs)
+}
+
+func (m *MongoDB) saveMany(ctx context.Context, docs []m27r.Doc) error {
+	if len(docs) == 0 {
+		log.Info().Msg("no docs to save")
+		return nil
+	}
+
+	var collection string
+
+	switch docs[0].(type) {
+	case *m27r.Character:
+		collection = ColCharacters
+	case *m27r.Comic:
+		collection = ColComics
+	case *m27r.Creator:
+		collection = ColCreators
+	}
+
+	ids, err := m.getAllIds(ctx, collection)
 	if err != nil {
 		return err
 	}
 
-	log.Info().Int("count", len(docs)).Msg("new creators saved")
+	newDocs := diff(ids, docs)
+
+	if len(newDocs) == 0 {
+		log.Info().Msg("no new docs to save")
+		return nil
+	}
+
+	many := []interface{}{}
+	for _, doc := range newDocs {
+		many = append(many, doc)
+	}
+
+	col := m.client.Database(m.database).Collection(string(collection))
+	_, err = col.InsertMany(ctx, many)
+	if err != nil {
+		return err
+	}
+
+	log.Info().Int("count", len(many)).Msg("new docs saved")
 
 	return nil
 }
 
-// func (m *MongoDB) SaveIDs(collection string, ids []int32) error {
-// 	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
-// 	defer cancel()
+func (m *MongoDB) SaveOne(doc m27r.Doc) error {
+	var collection string
+	switch doc.(type) {
+	case *m27r.Character:
+		collection = string(ColCharacters)
+	case *m27r.Comic:
+		collection = string(ColComics)
+	case *m27r.Creator:
+		collection = string(ColCreators)
+	default:
+		return fmt.Errorf("unsupported type: %T", doc)
+	}
 
-// 	existing, err := m.getAllIds(ctx, ColCharacters)
-// 	if err != nil {
-// 		return err
-// 	}
+	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
+	defer cancel()
 
-// 	newIDs := diff(existing, ids)
+	col := m.client.Database(m.database).Collection(collection)
 
-// 	docs := []interface{}{}
-// 	for _, id := range newIDs {
-// 		docs = append(docs, struct{ ID int32 }{id})
-// 	}
+	id := doc.Identify()
 
-// 	col := m.client.Database(m.database).Collection(collection)
-// 	_, err = col.InsertMany(ctx, docs)
-// 	if err != nil {
-// 		return err
-// 	}
+	result, err := col.ReplaceOne(ctx, bson.D{{Key: "id", Value: id}}, doc)
+	if err != nil {
+		return err
+	}
 
-// 	log.Info().Int("count", len(docs)).Msg("new ids saved")
+	log.Info().Interface("result", result).Int32("id", id).Msgf("document %T(%d) replaced", doc, id)
 
-// 	return nil
-// }
+	return nil
+}
 
-func (m *MongoDB) getAllIds(ctx context.Context, collection CollectionName) ([]int32, error) {
+func (m *MongoDB) getAllIds(ctx context.Context, collection string) ([]int32, error) {
 	ids := []int32{}
 
 	col := m.client.Database(m.database).Collection(string(collection))
@@ -330,76 +234,25 @@ func (m *MongoDB) getAllIds(ctx context.Context, collection CollectionName) ([]i
 	return ids, nil
 }
 
-func diffCharacters(ids []int32, chars []*m27r.Character) []*m27r.Character {
-	log.Info().Int("count", len(ids)).Int("chars", len(chars)).Msg("diff chars")
+func diff(ids []int32, docs []m27r.Doc) []m27r.Doc {
 	m := make(map[int32]struct{}, len(ids))
 	for i := range ids {
 		m[ids[i]] = struct{}{}
 	}
 
-	r := []*m27r.Character{}
+	var r []m27r.Doc
 	seen := map[int32]struct{}{}
-	for i := range chars {
-		if _, ok := m[chars[i].ID]; ok {
+	for i := range docs {
+		if _, ok := m[docs[i].Identify()]; ok {
 			continue
 		}
 
-		if _, ok := seen[chars[i].ID]; ok {
+		if _, ok := seen[docs[i].Identify()]; ok {
 			continue
 		}
 
-		seen[chars[i].ID] = struct{}{}
-		r = append(r, chars[i])
-	}
-
-	return r
-}
-
-func diffComics(ids []int32, comics []*m27r.Comic) []*m27r.Comic {
-	log.Info().Int("count", len(ids)).Int("comics", len(comics)).Msg("diff comics")
-	m := make(map[int32]struct{}, len(ids))
-	for i := range ids {
-		m[ids[i]] = struct{}{}
-	}
-
-	r := []*m27r.Comic{}
-	seen := map[int32]struct{}{}
-	for i := range comics {
-		if _, ok := m[comics[i].ID]; ok {
-			continue
-		}
-
-		if _, ok := seen[comics[i].ID]; ok {
-			continue
-		}
-
-		seen[comics[i].ID] = struct{}{}
-		r = append(r, comics[i])
-	}
-
-	return r
-}
-
-func diffCreators(ids []int32, creators []*m27r.Creator) []*m27r.Creator {
-	log.Info().Int("count", len(ids)).Int("creators", len(creators)).Msg("diff creators")
-	m := make(map[int32]struct{}, len(ids))
-	for i := range ids {
-		m[ids[i]] = struct{}{}
-	}
-
-	r := []*m27r.Creator{}
-	seen := map[int32]struct{}{}
-	for i := range creators {
-		if _, ok := m[creators[i].ID]; ok {
-			continue
-		}
-
-		if _, ok := seen[creators[i].ID]; ok {
-			continue
-		}
-
-		seen[creators[i].ID] = struct{}{}
-		r = append(r, creators[i])
+		seen[docs[i].Identify()] = struct{}{}
+		r = append(r, docs[i])
 	}
 
 	return r

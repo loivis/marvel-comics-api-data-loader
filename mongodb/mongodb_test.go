@@ -7,6 +7,16 @@ import (
 	"github.com/loivis/marvel-comics-api-data-loader/m27r"
 )
 
+// doc implements m27r.Doc.
+type doc struct {
+	ID     int32
+	Intact bool
+}
+
+func (doc *doc) Identify() int32 {
+	return doc.ID
+}
+
 func TestMongoDB_GetCount(t *testing.T) {
 	m, err := New("mongodb://localhost:27017", "marvel_test")
 	if err != nil {
@@ -36,26 +46,6 @@ func TestMongoDB_GetCount(t *testing.T) {
 	}
 }
 
-// func TestMongoDB_SaveIDs(t *testing.T) {
-// 	m, docs, err := setupDatabase("marvel_test", "foo")
-// 	if err != nil {
-// 		t.Fatalf("unexpected error: %v", err)
-// 	}
-
-// 	defer m.client.Database("marvel_test").Drop(context.Background())
-
-// 	ids := []int32{100, 101, 102}
-// 	err = m.SaveIDs("foo", ids)
-// 	if err != nil {
-// 		t.Fatalf("unexpected error: %v", err)
-// 	}
-
-// 	gotCount, _ := m.GetCount("foo")
-// 	if got, want := int(gotCount), len(docs)+len(ids); got != want {
-// 		t.Errorf("got %v docs, want %v", got, want)
-// 	}
-// }
-
 func TestMongoDB_GetAllIDs(t *testing.T) {
 	m, docs, err := setupDatabase("marvel_test", "foo")
 	if err != nil {
@@ -74,20 +64,20 @@ func TestMongoDB_GetAllIDs(t *testing.T) {
 	}
 }
 
-func TestMongoDB_IncompleteCharacterIDs(t *testing.T) {
-	m, _, err := setupDatabase("marvel_test", string(ColCharacters))
+func TestMongoDB_IncompleteIDs(t *testing.T) {
+	m, _, err := setupDatabase("marvel_test", "foo")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
 	defer m.client.Database("marvel_test").Drop(context.Background())
 
-	si, err := m.IncompleteCharacterIDs()
+	ids, err := m.IncompleteIDs("foo")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if got, want := len(si), 1; got != want {
+	if got, want := len(ids), 1; got != want {
 		t.Errorf("got %d ids, want %d", got, want)
 	}
 }
@@ -105,14 +95,14 @@ func setupDatabase(database, collection string) (*MongoDB, []interface{}, error)
 	docs := []interface{}{}
 	for i := 0; i < 77; i++ {
 		if i == 0 {
-			docs = append(docs, &m27r.Character{
+			docs = append(docs, doc{
 				ID:     int32(i),
 				Intact: false,
 			})
 			continue
 		}
 
-		docs = append(docs, &m27r.Character{
+		docs = append(docs, doc{
 			ID:     int32(i),
 			Intact: true,
 		})
@@ -126,48 +116,48 @@ func setupDatabase(database, collection string) (*MongoDB, []interface{}, error)
 	return m, docs, nil
 }
 
-func TestDiffCharacters(t *testing.T) {
+func TestDiff(t *testing.T) {
 	for _, tc := range []struct {
-		desc  string
-		ids   []int32
-		chars []*m27r.Character
-		out   []*m27r.Character
+		desc string
+		ids  []int32
+		docs []m27r.Doc
+		out  []m27r.Doc
 	}{
 		{
-			desc:  "NoDiff",
-			ids:   []int32{1, 2, 3, 4},
-			chars: []*m27r.Character{{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4}},
-			out:   []*m27r.Character{},
+			desc: "NoDiff",
+			ids:  []int32{1, 2, 3, 4},
+			docs: []m27r.Doc{&doc{ID: 1}, &doc{ID: 2}, &doc{ID: 3}, &doc{ID: 4}},
+			out:  []m27r.Doc{},
 		},
 		{
-			desc:  "LessIncoming",
-			ids:   []int32{1, 2, 3, 4},
-			chars: []*m27r.Character{{ID: 1}, {ID: 2}},
-			out:   []*m27r.Character{},
+			desc: "LessIncoming",
+			ids:  []int32{1, 2, 3, 4},
+			docs: []m27r.Doc{&doc{ID: 1}, &doc{ID: 2}},
+			out:  []m27r.Doc{},
 		},
 		{
-			desc:  "MoreInt32",
-			ids:   []int32{1, 2, 3, 4, 5, 6},
-			chars: []*m27r.Character{{ID: 1}, {ID: 2}, {ID: 8}, {ID: 3}, {ID: 4}, {ID: 7}, {ID: 9}},
-			out:   []*m27r.Character{{ID: 8}, {ID: 7}, {ID: 9}},
+			desc: "MoreInt32",
+			ids:  []int32{1, 2, 3, 4, 5, 6},
+			docs: []m27r.Doc{&doc{ID: 1}, &doc{ID: 2}, &doc{ID: 8}, &doc{ID: 3}, &doc{ID: 4}, &doc{ID: 7}, &doc{ID: 9}},
+			out:  []m27r.Doc{&doc{ID: 8}, &doc{ID: 7}, &doc{ID: 9}},
 		},
 		{
-			desc:  "WithDuplicates",
-			ids:   []int32{1, 2, 3},
-			chars: []*m27r.Character{{ID: 1}, {ID: 2}, {ID: 4}, {ID: 3}, {ID: 4}},
-			out:   []*m27r.Character{{ID: 4}},
+			desc: "WithDuplicates",
+			ids:  []int32{1, 2, 3},
+			docs: []m27r.Doc{&doc{ID: 1}, &doc{ID: 2}, &doc{ID: 4}, &doc{ID: 3}, &doc{ID: 4}},
+			out:  []m27r.Doc{&doc{ID: 4}},
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			gotChars := diffCharacters(tc.ids, tc.chars)
+			gotDocs := diff(tc.ids, tc.docs)
 
-			if got, want := len(gotChars), len(tc.out); got != want {
-				t.Fatalf("[%s] got %d chars, want %d", tc.desc, got, want)
+			if got, want := len(gotDocs), len(tc.out); got != want {
+				t.Fatalf("[%s] got %d docs, want %d", tc.desc, got, want)
 			}
 
-			for i, char := range tc.out {
-				if got, want := gotChars[i].ID, char.ID; got != want {
-					t.Errorf("[%s] got chars[%d] %d, want %d", tc.desc, i, got, want)
+			for i, doc := range tc.out {
+				if got, want := gotDocs[i].Identify(), doc.Identify(); got != want {
+					t.Errorf("[%s] got docs[%d] %d, want %d", tc.desc, i, got, want)
 				}
 
 			}
@@ -175,16 +165,16 @@ func TestDiffCharacters(t *testing.T) {
 	}
 }
 
-func BenchmarkDiffCharacters(b *testing.B) {
-	s1 := []int32{}
-	s2 := []*m27r.Character{}
+func BenchmarkDiff(b *testing.B) {
+	ids := []int32{}
+	var docs []m27r.Doc
 	for i := 0; i < 5000; i++ {
-		s1 = append(s1, int32(i))
-		s2 = append(s2, &m27r.Character{ID: int32(i)})
+		ids = append(ids, int32(i))
+		docs = append(docs, &doc{ID: int32(i)})
 	}
 
 	for i := 0; i < b.N; i++ {
-		diffCharacters(s1, s2)
+		diff(ids, docs)
 	}
 	// 100: BenchmarkDiff-4   	  200000	      6282 ns/op	    1046 B/op	       6 allocs/op
 	// 1000: BenchmarkDiff-4   	   30000	     48931 ns/op	   13721 B/op	       6 allocs/op

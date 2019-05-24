@@ -175,7 +175,7 @@ func (p *Processor) complementAllComics(ctx context.Context) error {
 
 			log.Info().Int32("id", id).Msgf("fetched comic with full info converted")
 
-			err = p.store.SaveComic(comic)
+			err = p.store.SaveOne(comic)
 			if err != nil {
 				<-conCh
 				return fmt.Errorf("error saving comic %d: %v", id, err)
