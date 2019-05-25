@@ -16,11 +16,6 @@ import (
 func (p *Processor) loadEvents(ctx context.Context) error {
 	var err error
 
-	/*
-		there are events with only id and wrong-type fields while paging over /v1/public/events.
-		6213 => ...
-		skip load all events based on comparison between api response and local storage.
-	*/
 	err = p.loadAllEventsWithBasicInfo(ctx)
 	if err != nil {
 		return fmt.Errorf("error loading all events info: %v", err)
@@ -58,6 +53,10 @@ func (p *Processor) loadAllEventsWithBasicInfo(ctx context.Context) error {
 
 	log.Info().Int64("local", existing).Int32("remote", remote).Msg("missing events, reload")
 
+	return p.loadMissingEvents(ctx, int32(existing), remote)
+}
+
+func (p *Processor) loadMissingEvents(ctx context.Context, starting, count int32) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -68,6 +67,9 @@ func (p *Processor) loadAllEventsWithBasicInfo(ctx context.Context) error {
 
 	go func() {
 		var events []*m27r.Event
+		defer func() {
+			doneCh <- struct{}{}
+		}()
 
 		batchSave := func(events []*m27r.Event) error {
 
@@ -93,25 +95,26 @@ func (p *Processor) loadAllEventsWithBasicInfo(ctx context.Context) error {
 		}
 
 		batchSave(events)
-
-		doneCh <- struct{}{}
 	}()
 
 	var g errgroup.Group
 
-	for i := int(int32(existing) / p.limit); i < int(remote/p.limit)+1; i++ {
+	for i := int(starting / p.limit); i < int(count/p.limit)+1; i++ {
 		conCh <- struct{}{}
 		offset := p.limit * int32(i)
+
 		g.Go(func() error {
+			defer func() {
+				<-conCh
+			}()
+
 			select {
 			case err := <-errCh: // check if any error saving data
 				cancel()
 				log.Info().Int32("offset", offset).Msgf("cancelled fetching paged events: %v", err)
-				<-conCh
 				return fmt.Errorf("cancelled fetching paged events limit %d offset %d: %v", p.limit, offset, err)
 			case <-ctx.Done(): // Check if ctx was cancelled in other goroutine
 				log.Info().Int32("offset", offset).Msg("ctx already cancelled")
-				<-conCh
 				return nil
 			default: // default to avoid blocking
 			}
@@ -126,14 +129,12 @@ func (p *Processor) loadAllEventsWithBasicInfo(ctx context.Context) error {
 			if err != nil {
 				cancel()
 				log.Info().Int32("offset", offset).Msg("cancelled fetching paged events")
-				<-conCh
 				return fmt.Errorf("error fetching with limit %d offset %d: %v", p.limit, offset, err)
 			}
 
 			for _, res := range col.Payload.Data.Results {
 				event, err := convertEvent(res)
 				if err != nil {
-					<-conCh
 					return err
 				}
 
@@ -142,7 +143,6 @@ func (p *Processor) loadAllEventsWithBasicInfo(ctx context.Context) error {
 
 			log.Info().Int32("offset", offset).Int32("count", col.Payload.Data.Count).Msg("fetched paged events")
 
-			<-conCh
 			return nil
 		})
 	}
