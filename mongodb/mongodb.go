@@ -198,6 +198,8 @@ func (m *MongoDB) SaveOne(doc m27r.Doc) error {
 		collection = string(ColComics)
 	case *m27r.Creator:
 		collection = string(ColCreators)
+	case *m27r.Event:
+		collection = string(ColEvents)
 	default:
 		return fmt.Errorf("unsupported type: %T", doc)
 	}

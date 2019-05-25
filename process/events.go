@@ -3,6 +3,7 @@ package process
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/loivis/marvel-comics-api-data-loader/m27r"
@@ -23,12 +24,12 @@ func (p *Processor) loadEvents(ctx context.Context) error {
 
 	log.Info().Msg("all events loaded")
 
-	// err = p.complementAllEvents(ctx)
-	// if err != nil {
-	// 	return fmt.Errorf("error complementing all events: %v", err)
-	// }
+	err = p.complementAllEvents(ctx)
+	if err != nil {
+		return fmt.Errorf("error complementing all events: %v", err)
+	}
 
-	// log.Info().Msg("all events complemented")
+	log.Info().Msg("all events complemented")
 
 	return nil
 }
@@ -54,6 +55,21 @@ func (p *Processor) loadAllEventsWithBasicInfo(ctx context.Context) error {
 	log.Info().Int64("local", existing).Int32("remote", remote).Msg("missing events, reload")
 
 	return p.loadMissingEvents(ctx, int32(existing), remote)
+}
+
+func (p *Processor) getEventCount(ctx context.Context) (int32, error) {
+	var limit int32 = 1
+	params := &operations.GetEventsCollectionParams{
+		Limit: &limit,
+	}
+	p.setParams(ctx, params)
+
+	col, err := p.mclient.Operations.GetEventsCollection(params)
+	if err != nil {
+		return 0, err
+	}
+
+	return col.Payload.Data.Total, nil
 }
 
 func (p *Processor) loadMissingEvents(ctx context.Context, starting, count int32) error {
@@ -154,25 +170,408 @@ func (p *Processor) loadMissingEvents(ctx context.Context, starting, count int32
 
 	select {
 	case <-doneCh:
-		log.Info().Msg("done")
+		log.Info().Msg("fetched all missing events with basic info")
 	}
 
 	return nil
 }
 
-func (p *Processor) getEventCount(ctx context.Context) (int32, error) {
-	var limit int32 = 1
-	params := &operations.GetEventsCollectionParams{
-		Limit: &limit,
+func (p *Processor) complementAllEvents(ctx context.Context) error {
+	ids, err := p.store.IncompleteIDs("events")
+	if err != nil {
+		return fmt.Errorf("error get imcomplete event ids: %v", err)
+	}
+
+	if len(ids) == 0 {
+		log.Info().Msg("no incomplete event")
+		return nil
+	}
+
+	log.Info().Int("count", len(ids)).Msg("fetched incomplete event ids")
+
+	var g errgroup.Group
+
+	conCh := make(chan struct{}, p.concurrency)
+
+	for _, id := range ids {
+		conCh <- struct{}{}
+
+		id := id
+
+		g.Go(func() error {
+			defer func() {
+				<-conCh
+			}()
+
+			event, err := p.getEventWithFullInfo(ctx, id)
+			if err != nil {
+				return fmt.Errorf("error fetching event %d: %v", id, err)
+			}
+
+			log.Info().Int32("id", id).Msgf("fetched event with full info converted")
+
+			err = p.store.SaveOne(event)
+			if err != nil {
+				return fmt.Errorf("error saving event %d: %v", id, err)
+			}
+
+			log.Info().Int32("id", id).Msgf("saved event")
+
+			log.Info().Int32("id", id).Msgf("complemented event")
+
+			return nil
+		})
+		break
+	}
+
+	if err := g.Wait(); err != nil {
+		return fmt.Errorf("error complementing events: %v", err)
+	}
+
+	log.Info().Int("count", len(ids)).Msgf("complemented events")
+
+	return nil
+}
+
+func (p *Processor) getEventWithFullInfo(ctx context.Context, id int32) (*m27r.Event, error) {
+	params := &operations.GetEventIndividualParams{
+		EventID: id,
 	}
 	p.setParams(ctx, params)
 
-	col, err := p.mclient.Operations.GetEventsCollection(params)
+	indiv, err := p.mclient.Operations.GetEventIndividual(params)
 	if err != nil {
-		return 0, err
+
+		return nil, fmt.Errorf("error fetching event %d: %v", id, err)
 	}
 
-	return col.Payload.Data.Total, nil
+	log.Info().Int32("id", id).Msg("fetched event with basic info")
+
+	event := indiv.Payload.Data.Results[0]
+
+	if event.Characters.Available != event.Characters.Returned {
+		chars, err := p.getEventCharacters(ctx, id, event.Characters.Available)
+		if err != nil {
+			return nil, fmt.Errorf("error fetching characters for event %d: %v", id, err)
+		}
+
+		event.Characters.Items = chars
+		event.Characters.Returned = event.Characters.Available
+	} else {
+		log.Info().Int32("id", id).Int32("count", event.Characters.Available).Msg("event has complete characters")
+	}
+
+	if event.Comics.Available != event.Comics.Returned {
+		comics, err := p.getEventComics(ctx, id, event.Comics.Available)
+		if err != nil {
+			return nil, fmt.Errorf("error fetching comics for event %d: %v", id, err)
+		}
+
+		event.Comics.Items = comics
+		event.Comics.Returned = event.Comics.Available
+	} else {
+		log.Info().Int32("id", id).Int32("count", event.Comics.Available).Msg("event has complete comics")
+	}
+
+	if event.Creators.Available != event.Creators.Returned {
+		creators, err := p.getEventCreators(ctx, id, event.Creators.Available)
+		if err != nil {
+			return nil, fmt.Errorf("error fetching creators for event %d: %v", id, err)
+		}
+
+		event.Creators.Items = creators
+		event.Creators.Returned = event.Creators.Available
+	} else {
+		log.Info().Int32("id", id).Int32("count", event.Creators.Available).Msg("event has complete creators")
+	}
+
+	if event.Series.Available != event.Series.Returned {
+		series, err := p.getEventSeries(ctx, id, event.Series.Available)
+		if err != nil {
+			return nil, fmt.Errorf("error fetching series for event %d: %v", id, err)
+		}
+
+		event.Series.Items = series
+		event.Series.Returned = event.Series.Available
+	} else {
+		log.Info().Int32("id", id).Int32("count", event.Creators.Available).Msg("event has complete series")
+	}
+
+	if event.Stories.Available != event.Stories.Returned {
+		stories, err := p.getEventStories(ctx, id, event.Stories.Available)
+		if err != nil {
+			return nil, fmt.Errorf("error fetching stories for event %d: %v", id, err)
+		}
+
+		event.Stories.Items = stories
+		event.Stories.Returned = event.Stories.Available
+	} else {
+		log.Info().Int32("id", id).Int32("count", event.Stories.Available).Msg("event has complete stories")
+	}
+
+	e, err := convertEvent(event)
+	if err != nil {
+		return nil, fmt.Errorf("error converting event %d: %v", event.ID, err)
+	}
+
+	return e, nil
+}
+
+func (p *Processor) getEventCharacters(ctx context.Context, id, count int32) ([]*models.CharacterSummary, error) {
+	var chars []*models.CharacterSummary
+
+	charCh := make(chan *models.CharacterSummary, count)
+	conCh := make(chan struct{}, p.concurrency)
+
+	var g errgroup.Group
+
+	for i := 0; i < int(count/p.limit)+1; i++ {
+		conCh <- struct{}{}
+		offset := p.limit * int32(i)
+
+		g.Go(func() error {
+			defer func() {
+				<-conCh
+			}()
+
+			params := &operations.GetEventCharacterCollectionParams{
+				EventID: id,
+				Limit:   &p.limit,
+				Offset:  &offset,
+			}
+			p.setParams(ctx, params)
+
+			col, err := p.mclient.Operations.GetEventCharacterCollection(params)
+			if err != nil {
+				return fmt.Errorf("error fetching character for event %d, offset %d: %v", id, offset, err)
+			}
+
+			for _, char := range col.Payload.Data.Results {
+				charCh <- &models.CharacterSummary{Name: char.Name, ResourceURI: "fake-prefix/" + strconv.FormatInt(int64(char.ID), 10)}
+			}
+
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+	close(charCh)
+
+	for char := range charCh {
+		chars = append(chars, char)
+	}
+
+	log.Info().Int("count", len(chars)).Int32("event_id", id).Msg("fetched characters for event")
+
+	return chars, nil
+}
+
+func (p *Processor) getEventComics(ctx context.Context, id, count int32) ([]*models.ComicSummary, error) {
+	var comics []*models.ComicSummary
+
+	comicCh := make(chan *models.ComicSummary, count)
+	conCh := make(chan struct{}, p.concurrency)
+
+	var g errgroup.Group
+
+	for i := 0; i < int(count/p.limit)+1; i++ {
+		conCh <- struct{}{}
+		offset := p.limit * int32(i)
+
+		g.Go(func() error {
+			defer func() {
+				<-conCh
+			}()
+
+			params := &operations.GetComicsCollectionByEventIDParams{
+				EventID: id,
+				Limit:   &p.limit,
+				Offset:  &offset,
+			}
+			p.setParams(ctx, params)
+
+			col, err := p.mclient.Operations.GetComicsCollectionByEventID(params)
+			if err != nil {
+				return fmt.Errorf("error fetching comics for event %d, offset %d: %v", id, offset, err)
+			}
+
+			for _, comic := range col.Payload.Data.Results {
+				comicCh <- &models.ComicSummary{Name: comic.Title, ResourceURI: "fake-prefix/" + strconv.FormatInt(int64(comic.ID), 10)}
+			}
+
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+	close(comicCh)
+
+	for comic := range comicCh {
+		comics = append(comics, comic)
+	}
+
+	log.Info().Int("count", len(comics)).Int32("event_id", id).Msg("fetched comics for event")
+
+	return comics, nil
+}
+
+func (p *Processor) getEventCreators(ctx context.Context, id, count int32) ([]*models.CreatorSummary, error) {
+	var creators []*models.CreatorSummary
+
+	creatorCh := make(chan *models.CreatorSummary, count)
+	conCh := make(chan struct{}, p.concurrency)
+
+	var g errgroup.Group
+
+	limit := p.limit / 2 // story seems to contains too much data
+
+	for i := 0; i < int(count/limit)+1; i++ {
+		conCh <- struct{}{}
+		offset := limit * int32(i)
+
+		g.Go(func() error {
+			defer func() {
+				<-conCh
+			}()
+
+			params := &operations.GetCreatorCollectionByEventIDParams{
+				EventID: id,
+				Limit:   &limit,
+				Offset:  &offset,
+			}
+			p.setParams(ctx, params)
+
+			col, err := p.mclient.Operations.GetCreatorCollectionByEventID(params)
+			if err != nil {
+				return fmt.Errorf("error fetching creators for event %d, offset %d: %v", id, offset, err)
+			}
+
+			for _, creator := range col.Payload.Data.Results {
+				creatorCh <- &models.CreatorSummary{Name: creator.FullName, ResourceURI: "fake-prefix/" + strconv.FormatInt(int64(creator.ID), 10)}
+			}
+
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+	close(creatorCh)
+
+	for creator := range creatorCh {
+		creators = append(creators, creator)
+	}
+
+	log.Info().Int("count", len(creators)).Int32("event_id", id).Msg("fetched creators for event")
+
+	return creators, nil
+}
+
+func (p *Processor) getEventSeries(ctx context.Context, id, count int32) ([]*models.SeriesSummary, error) {
+	var series []*models.SeriesSummary
+
+	seriesCh := make(chan *models.SeriesSummary, count)
+	conCh := make(chan struct{}, p.concurrency)
+
+	var g errgroup.Group
+
+	for i := 0; i < int(count/p.limit)+1; i++ {
+		conCh <- struct{}{}
+		offset := p.limit * int32(i)
+
+		g.Go(func() error {
+			defer func() {
+				<-conCh
+			}()
+
+			params := &operations.GetEventSeriesCollectionParams{
+				EventID: id,
+				Limit:   &p.limit,
+				Offset:  &offset,
+			}
+			p.setParams(ctx, params)
+
+			col, err := p.mclient.Operations.GetEventSeriesCollection(params)
+			if err != nil {
+				return fmt.Errorf("error fetching series for event %d, offset %d: %v", id, offset, err)
+			}
+
+			for _, series := range col.Payload.Data.Results {
+				seriesCh <- &models.SeriesSummary{Name: series.Title, ResourceURI: "fake-prefix/" + strconv.FormatInt(int64(series.ID), 10)}
+			}
+
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+	close(seriesCh)
+
+	for s := range seriesCh {
+		series = append(series, s)
+	}
+
+	log.Info().Int("count", len(series)).Int32("event_id", id).Msg("fetched series for event")
+
+	return series, nil
+}
+
+func (p *Processor) getEventStories(ctx context.Context, id, count int32) ([]*models.StorySummary, error) {
+	var stories []*models.StorySummary
+
+	storyCh := make(chan *models.StorySummary, count)
+	conCh := make(chan struct{}, p.concurrency)
+
+	var g errgroup.Group
+
+	for i := 0; i < int(count/p.limit)+1; i++ {
+		conCh <- struct{}{}
+		offset := p.limit * int32(i)
+
+		g.Go(func() error {
+			defer func() {
+				<-conCh
+			}()
+
+			params := &operations.GetEventStoryCollectionParams{
+				EventID: id,
+				Limit:   &p.limit,
+				Offset:  &offset,
+			}
+			p.setParams(ctx, params)
+
+			col, err := p.mclient.Operations.GetEventStoryCollection(params)
+			if err != nil {
+				return fmt.Errorf("error fetching stories for event %d, offset %d: %v", id, offset, err)
+			}
+
+			for _, story := range col.Payload.Data.Results {
+				storyCh <- &models.StorySummary{Name: story.Title, ResourceURI: "fake-prefix/" + strconv.FormatInt(int64(story.ID), 10)}
+			}
+
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+	close(storyCh)
+
+	for story := range storyCh {
+		stories = append(stories, story)
+	}
+
+	log.Info().Int("count", len(stories)).Int32("event_id", id).Msg("fetched stories for event")
+
+	return stories, nil
 }
 
 func convertEvent(in *models.Event) (*m27r.Event, error) {
