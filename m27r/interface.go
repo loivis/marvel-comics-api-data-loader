@@ -14,6 +14,7 @@ type Store interface {
 	SaveCreators(creators []*Creator) error
 	SaveEvents(creators []*Event) error
 	SaveSeries(creators []*Series) error
+	SaveStories(creators []*Story) error
 	SaveOne(doc Doc) error
 }
 

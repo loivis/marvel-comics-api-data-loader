@@ -6,11 +6,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/rs/zerolog/log"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/loivis/marvel-comics-api-data-loader/m27r"
 	"github.com/loivis/marvel-comics-api-data-loader/marvel/mclient/operations"
 	"github.com/loivis/marvel-comics-api-data-loader/marvel/models"
-	"github.com/rs/zerolog/log"
-	"golang.org/x/sync/errgroup"
 )
 
 func (p *Processor) loadSeries(ctx context.Context) error {

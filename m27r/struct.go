@@ -125,6 +125,27 @@ func (series *Series) Identify() int32 {
 	return series.ID
 }
 
+type Story struct {
+	Intact bool `bson:"intact"` // indicator if any data missing
+
+	Characters    []int32 `bson:"characters"` // list of character id
+	Comics        []int32 `bson:"comics"`     // list of comic id
+	Creators      []int32 `bson:"creators"`   // list of creator id
+	Description   string  `bson:"description"`
+	Events        []int32 `bson:"events"` // list of event id
+	ID            int32   `bson:"id"`
+	Modified      string  `bson:"modified"`
+	Originalissue int32   `json:"original_issue"` // comic id
+	Series        []int32 `bson:"series"`         // list of series id
+	Thumbnail     string  `bson:"thumbnail"`      // url of thumbnail image
+	Title         string  `bson:"title"`
+	Type          string  `bson:"type"`
+}
+
+func (story *Story) Identify() int32 {
+	return story.ID
+}
+
 type ComicDate struct {
 	Date string `bson:"date"`
 	Type string `bson:"type"`

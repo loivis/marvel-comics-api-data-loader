@@ -22,6 +22,7 @@ const (
 	ColCreators   = "creators"
 	ColEvents     = "events"
 	ColSeries     = "series"
+	ColStories    = "stories"
 )
 
 type MongoDB struct {
@@ -155,6 +156,18 @@ func (m *MongoDB) SaveSeries(series []*m27r.Series) error {
 	return m.saveMany(ctx, docs)
 }
 
+func (m *MongoDB) SaveStories(stories []*m27r.Story) error {
+	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
+	defer cancel()
+
+	var docs []m27r.Doc
+	for _, s := range stories {
+		docs = append(docs, s)
+	}
+
+	return m.saveMany(ctx, docs)
+}
+
 func (m *MongoDB) saveMany(ctx context.Context, docs []m27r.Doc) error {
 	if len(docs) == 0 {
 		log.Info().Msg("no docs to save")
@@ -174,6 +187,8 @@ func (m *MongoDB) saveMany(ctx context.Context, docs []m27r.Doc) error {
 		collection = ColEvents
 	case *m27r.Series:
 		collection = ColSeries
+	case *m27r.Story:
+		collection = ColStories
 	default:
 		return fmt.Errorf("unsupported type: %T", v)
 	}
@@ -219,6 +234,8 @@ func (m *MongoDB) SaveOne(doc m27r.Doc) error {
 		collection = ColEvents
 	case *m27r.Series:
 		collection = ColSeries
+	case *m27r.Story:
+		collection = ColStories
 	default:
 		return fmt.Errorf("unsupported type: %T", doc)
 	}
