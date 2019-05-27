@@ -100,6 +100,31 @@ func (event *Event) Identify() int32 {
 	return event.ID
 }
 
+type Series struct {
+	Intact bool `bson:"intact"` // indicator if any data missing
+
+	Characters  []int32 `bson:"characters"` // list of character id
+	Comics      []int32 `bson:"comics"`     // list of comic id
+	Creators    []int32 `bson:"creators"`   // list of creator id
+	Description string  `bson:"description"`
+	EndYear     int32   `bson:"end_year"` // The date of publication of the series.
+	Events      []int32 `bson:"events"`   // list of event id
+	ID          int32   `bson:"id"`
+	Modified    string  `bson:"modified"`
+	Next        int32   `bson:"next"`     // id of the series which follows this series
+	Previous    int32   `bson:"previous"` // id of the series which preceded this series
+	Rating      string  `bson:"rating"`
+	StartYear   int32   `bson:"start_year"` // The date of publication of the series.
+	Stories     []int32 `bson:"stories"`    // list of story id
+	Thumbnail   string  `bson:"thumbnail"`  // url of thumbnail image
+	Title       string  `bson:"title"`
+	URLs        []*URL  `bson:"urls"` // list of resource urls
+}
+
+func (series *Series) Identify() int32 {
+	return series.ID
+}
+
 type ComicDate struct {
 	Date string `bson:"date"`
 	Type string `bson:"type"`

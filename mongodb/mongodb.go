@@ -21,6 +21,7 @@ const (
 	ColComics     = "comics"
 	ColCreators   = "creators"
 	ColEvents     = "events"
+	ColSeries     = "series"
 )
 
 type MongoDB struct {
@@ -142,6 +143,18 @@ func (m *MongoDB) SaveEvents(events []*m27r.Event) error {
 	return m.saveMany(ctx, docs)
 }
 
+func (m *MongoDB) SaveSeries(series []*m27r.Series) error {
+	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
+	defer cancel()
+
+	var docs []m27r.Doc
+	for _, s := range series {
+		docs = append(docs, s)
+	}
+
+	return m.saveMany(ctx, docs)
+}
+
 func (m *MongoDB) saveMany(ctx context.Context, docs []m27r.Doc) error {
 	if len(docs) == 0 {
 		log.Info().Msg("no docs to save")
@@ -150,7 +163,7 @@ func (m *MongoDB) saveMany(ctx context.Context, docs []m27r.Doc) error {
 
 	var collection string
 
-	switch docs[0].(type) {
+	switch v := docs[0].(type) {
 	case *m27r.Character:
 		collection = ColCharacters
 	case *m27r.Comic:
@@ -159,6 +172,10 @@ func (m *MongoDB) saveMany(ctx context.Context, docs []m27r.Doc) error {
 		collection = ColCreators
 	case *m27r.Event:
 		collection = ColEvents
+	case *m27r.Series:
+		collection = ColSeries
+	default:
+		return fmt.Errorf("unsupported type: %T", v)
 	}
 
 	ids, err := m.getAllIds(ctx, collection)
@@ -178,7 +195,7 @@ func (m *MongoDB) saveMany(ctx context.Context, docs []m27r.Doc) error {
 		many = append(many, doc)
 	}
 
-	col := m.client.Database(m.database).Collection(string(collection))
+	col := m.client.Database(m.database).Collection(collection)
 	_, err = col.InsertMany(ctx, many)
 	if err != nil {
 		return err
@@ -193,13 +210,15 @@ func (m *MongoDB) SaveOne(doc m27r.Doc) error {
 	var collection string
 	switch doc.(type) {
 	case *m27r.Character:
-		collection = string(ColCharacters)
+		collection = ColCharacters
 	case *m27r.Comic:
-		collection = string(ColComics)
+		collection = ColComics
 	case *m27r.Creator:
-		collection = string(ColCreators)
+		collection = ColCreators
 	case *m27r.Event:
-		collection = string(ColEvents)
+		collection = ColEvents
+	case *m27r.Series:
+		collection = ColSeries
 	default:
 		return fmt.Errorf("unsupported type: %T", doc)
 	}

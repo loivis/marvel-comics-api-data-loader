@@ -58,7 +58,12 @@ func (p *Processor) Process(ctx context.Context) error {
 	// 	return err
 	// }
 
-	err = p.loadEvents(ctx)
+	// err = p.loadEvents(ctx)
+	// if err != nil {
+	// 	return err
+	// }
+
+	err = p.loadSeries(ctx)
 	if err != nil {
 		return err
 	}

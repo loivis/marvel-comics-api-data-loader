@@ -88,7 +88,6 @@ func (p *Processor) loadMissingEvents(ctx context.Context, starting, count int32
 		}()
 
 		batchSave := func(events []*m27r.Event) error {
-
 			if err := p.store.SaveEvents(events); err != nil {
 				return err
 			}
@@ -221,7 +220,6 @@ func (p *Processor) complementAllEvents(ctx context.Context) error {
 
 			return nil
 		})
-		break
 	}
 
 	if err := g.Wait(); err != nil {
@@ -294,7 +292,7 @@ func (p *Processor) getEventWithFullInfo(ctx context.Context, id int32) (*m27r.E
 		event.Series.Items = series
 		event.Series.Returned = event.Series.Available
 	} else {
-		log.Info().Int32("id", id).Int32("count", event.Creators.Available).Msg("event has complete series")
+		log.Info().Int32("id", id).Int32("count", event.Series.Available).Msg("event has complete series")
 	}
 
 	if event.Stories.Available != event.Stories.Returned {
