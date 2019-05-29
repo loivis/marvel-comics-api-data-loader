@@ -44,25 +44,25 @@ func (p *Processor) loadAllSeriesWithBasicInfo(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("error fetching series count: %v", err)
 	}
-	log.Info().Str("type", "series").Int32("count", remote).Msg("series count from api")
+	log.Info().Str("type", "series").Int("count", remote).Msg("series count from api")
 
-	existing, err := p.store.GetCount("series")
+	existing, err := p.store.GetCount(ctx, "series")
 	if err != nil {
 		return err
 	}
-	log.Info().Str("type", "series").Int64("count", existing).Msg("existing series count")
+	log.Info().Str("type", "series").Int("count", existing).Msg("existing series count")
 
-	if int64(remote) == existing {
-		log.Info().Int64("local", existing).Int32("remote", remote).Msg("no missing series")
+	if int(remote) == existing {
+		log.Info().Int("local", existing).Int("remote", remote).Msg("no missing series")
 		return nil
 	}
 
-	log.Info().Int64("local", existing).Int32("remote", remote).Msg("missing series, reload")
+	log.Info().Int("local", existing).Int("remote", remote).Msg("missing series, reload")
 
-	return p.loadMissingSeries(ctx, int32(existing), remote)
+	return p.loadMissingSeries(ctx, int32(existing), int32(remote))
 }
 
-func (p *Processor) getSeriesCount(ctx context.Context) (int32, error) {
+func (p *Processor) getSeriesCount(ctx context.Context) (int, error) {
 	var limit int32 = 1
 	params := &operations.GetSeriesCollectionParams{
 		Limit: &limit,
@@ -74,7 +74,7 @@ func (p *Processor) getSeriesCount(ctx context.Context) (int32, error) {
 		return 0, err
 	}
 
-	return col.Payload.Data.Total, nil
+	return int(col.Payload.Data.Total), nil
 }
 
 func (p *Processor) loadMissingSeries(ctx context.Context, starting, count int32) error {
@@ -93,7 +93,7 @@ func (p *Processor) loadMissingSeries(ctx context.Context, starting, count int32
 		}()
 
 		batchSave := func(series []*m27r.Series) error {
-			if err := p.store.SaveSeries(series); err != nil {
+			if err := p.store.SaveSeries(ctx, series); err != nil {
 				return err
 			}
 
@@ -181,7 +181,7 @@ func (p *Processor) loadMissingSeries(ctx context.Context, starting, count int32
 }
 
 func (p *Processor) complementAllSeries(ctx context.Context) error {
-	ids, err := p.store.IncompleteIDs("series")
+	ids, err := p.store.IncompleteIDs(ctx, "series")
 	if err != nil {
 		return fmt.Errorf("error get imcomplete series ids: %v", err)
 	}
@@ -212,16 +212,16 @@ func (p *Processor) complementAllSeries(ctx context.Context) error {
 				return fmt.Errorf("error fetching series %d: %v", id, err)
 			}
 
-			log.Info().Int32("id", id).Msgf("fetched series with full info converted")
+			log.Info().Int("id", id).Msgf("fetched series with full info converted")
 
-			err = p.store.SaveOne(series)
+			err = p.store.SaveOne(ctx, series)
 			if err != nil {
 				return fmt.Errorf("error saving series %d: %v", id, err)
 			}
 
-			log.Info().Int32("id", id).Msgf("saved series")
+			log.Info().Int("id", id).Msgf("saved series")
 
-			log.Info().Int32("id", id).Msgf("complemented series")
+			log.Info().Int("id", id).Msgf("complemented series")
 
 			return nil
 		})
@@ -236,9 +236,9 @@ func (p *Processor) complementAllSeries(ctx context.Context) error {
 	return nil
 }
 
-func (p *Processor) getSeriesWithFullInfo(ctx context.Context, id int32) (*m27r.Series, error) {
+func (p *Processor) getSeriesWithFullInfo(ctx context.Context, id int) (*m27r.Series, error) {
 	params := &operations.GetSeriesIndividualParams{
-		SeriesID: id,
+		SeriesID: int32(id),
 	}
 	p.setParams(ctx, params)
 
@@ -247,12 +247,12 @@ func (p *Processor) getSeriesWithFullInfo(ctx context.Context, id int32) (*m27r.
 		return nil, fmt.Errorf("error fetching series %d: %v", id, err)
 	}
 
-	log.Info().Int32("id", id).Msg("fetched series with basic info")
+	log.Info().Int("id", id).Msg("fetched series with basic info")
 
 	series := indiv.Payload.Data.Results[0]
 
 	if series.Characters.Available != series.Characters.Returned {
-		chars, err := p.getSeriesCharacters(ctx, id, series.Characters.Available)
+		chars, err := p.getSeriesCharacters(ctx, int32(id), series.Characters.Available)
 		if err != nil {
 			return nil, fmt.Errorf("error fetching characters for series %d: %v", id, err)
 		}
@@ -260,11 +260,11 @@ func (p *Processor) getSeriesWithFullInfo(ctx context.Context, id int32) (*m27r.
 		series.Characters.Items = chars
 		series.Characters.Returned = series.Characters.Available
 	} else {
-		log.Info().Int32("id", id).Int32("count", series.Characters.Available).Msg("series has complete characters")
+		log.Info().Int("id", id).Int32("count", series.Characters.Available).Msg("series has complete characters")
 	}
 
 	if series.Comics.Available != series.Comics.Returned {
-		comics, err := p.getSeriesComics(ctx, id, series.Comics.Available)
+		comics, err := p.getSeriesComics(ctx, int32(id), series.Comics.Available)
 		if err != nil {
 			return nil, fmt.Errorf("error fetching comics for series %d: %v", id, err)
 		}
@@ -272,11 +272,11 @@ func (p *Processor) getSeriesWithFullInfo(ctx context.Context, id int32) (*m27r.
 		series.Comics.Items = comics
 		series.Comics.Returned = series.Comics.Available
 	} else {
-		log.Info().Int32("id", id).Int32("count", series.Comics.Available).Msg("series has complete comics")
+		log.Info().Int("id", id).Int32("count", series.Comics.Available).Msg("series has complete comics")
 	}
 
 	if series.Creators.Available != series.Creators.Returned {
-		creators, err := p.getSeriesCreators(ctx, id, series.Creators.Available)
+		creators, err := p.getSeriesCreators(ctx, int32(id), series.Creators.Available)
 		if err != nil {
 			return nil, fmt.Errorf("error fetching creators for series %d: %v", id, err)
 		}
@@ -284,11 +284,11 @@ func (p *Processor) getSeriesWithFullInfo(ctx context.Context, id int32) (*m27r.
 		series.Creators.Items = creators
 		series.Creators.Returned = series.Creators.Available
 	} else {
-		log.Info().Int32("id", id).Int32("count", series.Creators.Available).Msg("series has complete creators")
+		log.Info().Int("id", id).Int32("count", series.Creators.Available).Msg("series has complete creators")
 	}
 
 	if series.Events.Available != series.Events.Returned {
-		events, err := p.getSeriesEvents(ctx, id, series.Events.Available)
+		events, err := p.getSeriesEvents(ctx, int32(id), series.Events.Available)
 		if err != nil {
 			return nil, fmt.Errorf("error fetching events for series %d: %v", id, err)
 		}
@@ -296,11 +296,11 @@ func (p *Processor) getSeriesWithFullInfo(ctx context.Context, id int32) (*m27r.
 		series.Events.Items = events
 		series.Events.Returned = series.Events.Available
 	} else {
-		log.Info().Int32("id", id).Int32("count", series.Events.Available).Msg("series has complete events")
+		log.Info().Int("id", id).Int32("count", series.Events.Available).Msg("series has complete events")
 	}
 
 	if series.Stories.Available != series.Stories.Returned {
-		stories, err := p.getSeriesStories(ctx, id, series.Stories.Available)
+		stories, err := p.getSeriesStories(ctx, int32(id), series.Stories.Available)
 		if err != nil {
 			return nil, fmt.Errorf("error fetching stories for series %d: %v", id, err)
 		}
@@ -308,7 +308,7 @@ func (p *Processor) getSeriesWithFullInfo(ctx context.Context, id int32) (*m27r.
 		series.Stories.Items = stories
 		series.Stories.Returned = series.Stories.Available
 	} else {
-		log.Info().Int32("id", id).Int32("count", series.Stories.Available).Msg("series has complete stories")
+		log.Info().Int("id", id).Int32("count", series.Stories.Available).Msg("series has complete stories")
 	}
 
 	e, err := convertSeries(series)

@@ -39,25 +39,25 @@ func (p *Processor) loadAllStoriesWithBasicInfo(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("error fetching story count: %v", err)
 	}
-	log.Info().Str("type", "story").Int32("count", remote).Msg("story count from api")
+	log.Info().Str("type", "story").Int("count", remote).Msg("story count from api")
 
-	existing, err := p.store.GetCount("stories")
+	existing, err := p.store.GetCount(ctx, "stories")
 	if err != nil {
 		return err
 	}
-	log.Info().Str("type", "story").Int64("count", existing).Msg("existing story count")
+	log.Info().Str("type", "story").Int("count", existing).Msg("existing story count")
 
-	if int64(remote) == existing {
-		log.Info().Int64("local", existing).Int32("remote", remote).Msg("no missing stories")
+	if int(remote) == existing {
+		log.Info().Int("local", existing).Int("remote", remote).Msg("no missing stories")
 		return nil
 	}
 
-	log.Info().Int64("local", existing).Int32("remote", remote).Msg("missing stories, reload")
+	log.Info().Int("local", existing).Int("remote", remote).Msg("missing stories, reload")
 
-	return p.loadMissingStories(ctx, int32(existing), remote)
+	return p.loadMissingStories(ctx, int32(existing), int32(remote))
 }
 
-func (p *Processor) getStoryCount(ctx context.Context) (int32, error) {
+func (p *Processor) getStoryCount(ctx context.Context) (int, error) {
 	var limit int32 = 1
 	params := &operations.GetStoryCollectionParams{
 		Limit: &limit,
@@ -69,7 +69,7 @@ func (p *Processor) getStoryCount(ctx context.Context) (int32, error) {
 		return 0, err
 	}
 
-	return col.Payload.Data.Total, nil
+	return int(col.Payload.Data.Total), nil
 }
 
 func (p *Processor) loadMissingStories(ctx context.Context, starting, count int32) error {
@@ -88,7 +88,7 @@ func (p *Processor) loadMissingStories(ctx context.Context, starting, count int3
 		}()
 
 		batchSave := func(stories []*m27r.Story) error {
-			if err := p.store.SaveStories(stories); err != nil {
+			if err := p.store.SaveStories(ctx, stories); err != nil {
 				return err
 			}
 
@@ -122,6 +122,12 @@ func (p *Processor) loadMissingStories(ctx context.Context, starting, count int3
 			defer func() {
 				<-conCh
 			}()
+
+			switch offset {
+			case 23000, 27200, 38300, 39500: // 24943.Title, 30688.Title, 43290.Description, 44568.Title
+				log.Error().Int32("offset", offset).Msgf("skipped due to unmarshalbility")
+				return nil
+			}
 
 			select {
 			case err := <-errCh: // check if any error saving data
@@ -176,7 +182,7 @@ func (p *Processor) loadMissingStories(ctx context.Context, starting, count int3
 }
 
 func (p *Processor) complementAllStories(ctx context.Context) error {
-	ids, err := p.store.IncompleteIDs("stories")
+	ids, err := p.store.IncompleteIDs(ctx, "stories")
 	if err != nil {
 		return fmt.Errorf("error get imcomplete story ids: %v", err)
 	}
@@ -207,16 +213,16 @@ func (p *Processor) complementAllStories(ctx context.Context) error {
 				return fmt.Errorf("error fetching story %d: %v", id, err)
 			}
 
-			log.Info().Int32("id", id).Msgf("fetched story with full info converted")
+			log.Info().Int("id", id).Msgf("fetched story with full info converted")
 
-			err = p.store.SaveOne(story)
+			err = p.store.SaveOne(ctx, story)
 			if err != nil {
 				return fmt.Errorf("error saving story %d: %v", id, err)
 			}
 
-			log.Info().Int32("id", id).Msgf("saved story")
+			log.Info().Int("id", id).Msgf("saved story")
 
-			log.Info().Int32("id", id).Msgf("complemented story")
+			log.Info().Int("id", id).Msgf("complemented story")
 
 			return nil
 		})
@@ -231,9 +237,9 @@ func (p *Processor) complementAllStories(ctx context.Context) error {
 	return nil
 }
 
-func (p *Processor) getStoryWithFullInfo(ctx context.Context, id int32) (*m27r.Story, error) {
+func (p *Processor) getStoryWithFullInfo(ctx context.Context, id int) (*m27r.Story, error) {
 	params := &operations.GetStoryIndividualParams{
-		StoryID: id,
+		StoryID: int32(id),
 	}
 	p.setParams(ctx, params)
 
@@ -243,12 +249,12 @@ func (p *Processor) getStoryWithFullInfo(ctx context.Context, id int32) (*m27r.S
 		return nil, fmt.Errorf("error fetching story %d: %v", id, err)
 	}
 
-	log.Info().Int32("id", id).Msg("fetched story with basic info")
+	log.Info().Int("id", id).Msg("fetched story with basic info")
 
 	story := indiv.Payload.Data.Results[0]
 
 	if story.Characters.Available != story.Characters.Returned {
-		chars, err := p.getStoryCharacters(ctx, id, story.Characters.Available)
+		chars, err := p.getStoryCharacters(ctx, int32(id), story.Characters.Available)
 		if err != nil {
 			return nil, fmt.Errorf("error fetching characters for story %d: %v", id, err)
 		}
@@ -256,11 +262,11 @@ func (p *Processor) getStoryWithFullInfo(ctx context.Context, id int32) (*m27r.S
 		story.Characters.Items = chars
 		story.Characters.Returned = story.Characters.Available
 	} else {
-		log.Info().Int32("id", id).Int32("count", story.Characters.Available).Msg("story has complete characters")
+		log.Info().Int("id", id).Int32("count", story.Characters.Available).Msg("story has complete characters")
 	}
 
 	if story.Comics.Available != story.Comics.Returned {
-		comics, err := p.getStoryComics(ctx, id, story.Comics.Available)
+		comics, err := p.getStoryComics(ctx, int32(id), story.Comics.Available)
 		if err != nil {
 			return nil, fmt.Errorf("error fetching comics for story %d: %v", id, err)
 		}
@@ -268,11 +274,11 @@ func (p *Processor) getStoryWithFullInfo(ctx context.Context, id int32) (*m27r.S
 		story.Comics.Items = comics
 		story.Comics.Returned = story.Comics.Available
 	} else {
-		log.Info().Int32("id", id).Int32("count", story.Comics.Available).Msg("story has complete comics")
+		log.Info().Int("id", id).Int32("count", story.Comics.Available).Msg("story has complete comics")
 	}
 
 	if story.Creators.Available != story.Creators.Returned {
-		creators, err := p.getStoryCreators(ctx, id, story.Creators.Available)
+		creators, err := p.getStoryCreators(ctx, int32(id), story.Creators.Available)
 		if err != nil {
 			return nil, fmt.Errorf("error fetching creators for story %d: %v", id, err)
 		}
@@ -280,11 +286,11 @@ func (p *Processor) getStoryWithFullInfo(ctx context.Context, id int32) (*m27r.S
 		story.Creators.Items = creators
 		story.Creators.Returned = story.Creators.Available
 	} else {
-		log.Info().Int32("id", id).Int32("count", story.Creators.Available).Msg("story has complete creators")
+		log.Info().Int("id", id).Int32("count", story.Creators.Available).Msg("story has complete creators")
 	}
 
 	if story.Events.Available != story.Events.Returned {
-		events, err := p.getStoryEvents(ctx, id, story.Events.Available)
+		events, err := p.getStoryEvents(ctx, int32(id), story.Events.Available)
 		if err != nil {
 			return nil, fmt.Errorf("error fetching events for story %d: %v", id, err)
 		}
@@ -292,11 +298,11 @@ func (p *Processor) getStoryWithFullInfo(ctx context.Context, id int32) (*m27r.S
 		story.Events.Items = events
 		story.Events.Returned = story.Events.Available
 	} else {
-		log.Info().Int32("id", id).Int32("count", story.Events.Available).Msg("story has complete events")
+		log.Info().Int("id", id).Int32("count", story.Events.Available).Msg("story has complete events")
 	}
 
 	if story.Series.Available != story.Series.Returned {
-		series, err := p.getStorySeries(ctx, id, story.Series.Available)
+		series, err := p.getStorySeries(ctx, int32(id), story.Series.Available)
 		if err != nil {
 			return nil, fmt.Errorf("error fetching series for story %d: %v", id, err)
 		}
@@ -304,15 +310,15 @@ func (p *Processor) getStoryWithFullInfo(ctx context.Context, id int32) (*m27r.S
 		story.Series.Items = series
 		story.Series.Returned = story.Series.Available
 	} else {
-		log.Info().Int32("id", id).Int32("count", story.Series.Available).Msg("story has complete series")
+		log.Info().Int("id", id).Int32("count", story.Series.Available).Msg("story has complete series")
 	}
 
-	e, err := convertStory(story)
+	converted, err := convertStory(story)
 	if err != nil {
 		return nil, fmt.Errorf("error converting story %d: %v", story.ID, err)
 	}
 
-	return e, nil
+	return converted, nil
 }
 
 func (p *Processor) getStoryCharacters(ctx context.Context, id, count int32) ([]*models.CharacterSummary, error) {
@@ -575,7 +581,6 @@ func convertStory(in *models.Story) (*m27r.Story, error) {
 		Description: in.Description,
 		ID:          in.ID,
 		Modified:    in.Modified,
-		Thumbnail:   strings.Replace(in.Thumbnail.Path+"."+in.Thumbnail.Extension, "http://", "https://", 1),
 		Title:       in.Title,
 		Type:        in.Type,
 	}
@@ -631,6 +636,10 @@ func convertStory(in *models.Story) (*m27r.Story, error) {
 		}
 
 		out.Series = append(out.Series, id)
+	}
+
+	if in.Thumbnail != nil {
+		out.Thumbnail = strings.Replace(in.Thumbnail.Path+"."+in.Thumbnail.Extension, "http://", "https://", 1)
 	}
 
 	if in.Characters.Available == in.Characters.Returned && in.Comics.Available == in.Comics.Returned && in.Creators.Available == in.Creators.Returned && in.Events.Available == in.Events.Returned && in.Series.Available == in.Series.Returned {

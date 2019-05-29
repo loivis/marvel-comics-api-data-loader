@@ -8,10 +8,11 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/rs/zerolog/log"
+
 	"github.com/loivis/marvel-comics-api-data-loader/marvel/mclient"
 	"github.com/loivis/marvel-comics-api-data-loader/mongodb"
 	"github.com/loivis/marvel-comics-api-data-loader/process"
-	"github.com/rs/zerolog/log"
 )
 
 func main() {
@@ -35,16 +36,16 @@ func main() {
 }
 
 type config struct {
-	mongodbDatabase string
 	mongodbURI      string
+	mongodbDatabase string
 	privateKey      string
 	publicKey       string
 }
 
 func readConfig() *config {
 	return &config{
-		mongodbDatabase: os.Getenv("MONGODB_DATABASE"),
 		mongodbURI:      os.Getenv("MONGODB_URI"),
+		mongodbDatabase: os.Getenv("MONGODB_DATABASE"),
 		privateKey:      os.Getenv("MARVEL_API_PRIVATE_KEY"),
 		publicKey:       os.Getenv("MARVEL_API_PUBLIC_KEY"),
 	}
@@ -77,8 +78,8 @@ func (c *config) String() string {
 		k string
 		v interface{}
 	}{
+		{"MONGODB_URI", hideIfSet(c.mongodbURI)},
 		{"MONGODB_DATABASE", c.mongodbDatabase},
-		{"MONGODB_URI", c.mongodbURI},
 		{"MARVEL_API_PRIVATE_KEY", hideIfSet(c.privateKey)},
 		{"MARVEL_API_PUBLIC_KEY", c.publicKey},
 	} {

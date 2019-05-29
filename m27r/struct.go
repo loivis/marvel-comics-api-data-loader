@@ -3,20 +3,20 @@ package m27r
 type Character struct {
 	Intact bool `bson:"intact"` // indicator if any data missing
 
-	Comics      []int32 `bson:"comics"`      // list of comic id
-	Description string  `bson:"description"` // short bio or description
-	Events      []int32 `bson:"events"`      // list of event id
+	Comics      []int32 `bson:"comics"`                // list of comic id
+	Description string  `bson:"description,omitempty"` // short bio or description
+	Events      []int32 `bson:"events"`                // list of event id
 	ID          int32   `bson:"id"`
-	Modified    string  `bson:"modified"`
-	Name        string  `bson:"name"`
-	Series      []int32 `bson:"series"`    // list of series id
-	Stories     []int32 `bson:"stories"`   // list of story id
-	Thumbnail   string  `bson:"thumbnail"` // url of thumbnail image
-	URLs        []*URL  `bson:"urls"`      // list of resource urls
+	Modified    string  `bson:"modified,omitempty"`
+	Name        string  `bson:"name,omitempty"`
+	Series      []int32 `bson:"series"`              // list of series id
+	Stories     []int32 `bson:"stories"`             // list of story id
+	Thumbnail   string  `bson:"thumbnail,omitempty"` // url of thumbnail image
+	URLs        []*URL  `bson:"urls"`                // list of resource urls
 }
 
-func (char *Character) Identify() int32 {
-	return char.ID
+func (char *Character) Identify() int {
+	return int(char.ID)
 }
 
 type Comic struct {
@@ -27,31 +27,31 @@ type Comic struct {
 	Collections        []int32       `bson:"collections"`      // list of comic id
 	Creators           []int32       `bson:"creators"`         // list of creator id
 	Dates              []*ComicDate  `bson:"dates"`
-	Description        string        `bson:"description"`
+	Description        string        `bson:"description,omitempty"`
 	DigitalID          int32         `bson:"digital_id"`
-	EAN                string        `bson:"ean"`
+	EAN                string        `bson:"ean,omitempty"`
 	Events             []int32       `bson:"events"` // list of event id
-	Format             string        `bson:"format"`
+	Format             string        `bson:"format,omitempty"`
 	ID                 int32         `bson:"id"`
 	Images             []string      `bson:"images"`
-	ISSN               string        `bson:"issn"`
+	ISSN               string        `bson:"issn,omitempty"`
 	IssueNumber        float64       `bson:"issue_number"`
-	Modified           string        `bson:"modified"`
+	Modified           string        `bson:"modified,omitempty"`
 	PageCount          int32         `bson:"page_count"`
 	Prices             []*ComicPrice `bson:"prices"`
 	SeriesID           int32         `bson:"series_id"`
 	Stories            []int32       `bson:"stories"` // list of story id
 	TextObjects        []*TextObject `bson:"text_objects"`
-	Thumbnail          string        `bson:"thumbnail"` // url of thumbnail image
-	Title              string        `bson:"title"`
-	UPC                string        `bson:"upc"`
+	Thumbnail          string        `bson:"thumbnail,omitempty"` // url of thumbnail image
+	Title              string        `bson:"title,omitempty"`
+	UPC                string        `bson:"upc,omitempty"`
 	URLs               []*URL        `bson:"urls"` // list of resource urls
-	VariantDescription string        `bson:"variant_description"`
+	VariantDescription string        `bson:"variant_description,omitempty"`
 	Variants           []int32       `bson:"variants"` // list of comic id
 }
 
-func (comic *Comic) Identify() int32 {
-	return comic.ID
+func (comic *Comic) Identify() int {
+	return int(comic.ID)
 }
 
 type Creator struct {
@@ -59,21 +59,21 @@ type Creator struct {
 
 	Comics     []int32 `bson:"comics"` // list of comic id
 	Events     []int32 `bson:"events"` // list of event id
-	FirtName   string  `bson:"firt_name"`
-	FullName   string  `bson:"full_name"`
+	FirtName   string  `bson:"firt_name,omitempty"`
+	FullName   string  `bson:"full_name,omitempty"`
 	ID         int32   `bson:"id"`
-	LastName   string  `bson:"last_name"`
-	MiddleName string  `bson:"middle_name"`
-	Modified   string  `bson:"modified"`
+	LastName   string  `bson:"last_name,omitempty"`
+	MiddleName string  `bson:"middle_name,omitempty"`
+	Modified   string  `bson:"modified,omitempty"`
 	Series     []int32 `bson:"series"`  // list of series id
 	Stories    []int32 `bson:"stories"` // list of story id
-	Suffix     string  `bson:"suffix"`
-	Thumbnail  string  `bson:"thumbnail"` // url of thumbnail image
-	URLs       []*URL  `bson:"urls"`      // list of resource urls
+	Suffix     string  `bson:"suffix,omitempty"`
+	Thumbnail  string  `bson:"thumbnail,omitempty"` // url of thumbnail image
+	URLs       []*URL  `bson:"urls"`                // list of resource urls
 }
 
-func (creator *Creator) Identify() int32 {
-	return creator.ID
+func (creator *Creator) Identify() int {
+	return int(creator.ID)
 }
 
 type Event struct {
@@ -82,22 +82,22 @@ type Event struct {
 	Characters  []int32 `bson:"characters"` // list of character id
 	Comics      []int32 `bson:"comics"`     // list of comic id
 	Creators    []int32 `bson:"creators"`   // list of creator id
-	Description string  `bson:"description"`
-	End         string  `bson:"end"` // The date of publication of the last issue in this event.
+	Description string  `bson:"description,omitempty"`
+	End         string  `bson:"end,omitempty"` // The date of publication of the last issue in this event.
 	ID          int32   `bson:"id"`
-	Modified    string  `bson:"modified"`
-	Next        int32   `bson:"next"`      // id of the event which follows this event
-	Previous    int32   `bson:"previous"`  // id of the event which preceded this event
-	Series      []int32 `bson:"series"`    // list of series id
-	Start       string  `bson:"start"`     // The date of publication of the first issue in this event.
-	Stories     []int32 `bson:"stories"`   // list of story id
-	Thumbnail   string  `bson:"thumbnail"` // url of thumbnail image
-	Title       string  `bson:"title"`
+	Modified    string  `bson:"modified,omitempty"`
+	Next        int32   `bson:"next"`                // id of the event which follows this event
+	Previous    int32   `bson:"previous"`            // id of the event which preceded this event
+	Series      []int32 `bson:"series"`              // list of series id
+	Start       string  `bson:"start,omitempty"`     // The date of publication of the first issue in this event.
+	Stories     []int32 `bson:"stories"`             // list of story id
+	Thumbnail   string  `bson:"thumbnail,omitempty"` // url of thumbnail image
+	Title       string  `bson:"title,omitempty"`
 	URLs        []*URL  `bson:"urls"` // list of resource urls
 }
 
-func (event *Event) Identify() int32 {
-	return event.ID
+func (event *Event) Identify() int {
+	return int(event.ID)
 }
 
 type Series struct {
@@ -106,23 +106,23 @@ type Series struct {
 	Characters  []int32 `bson:"characters"` // list of character id
 	Comics      []int32 `bson:"comics"`     // list of comic id
 	Creators    []int32 `bson:"creators"`   // list of creator id
-	Description string  `bson:"description"`
+	Description string  `bson:"description,omitempty"`
 	EndYear     int32   `bson:"end_year"` // The date of publication of the series.
 	Events      []int32 `bson:"events"`   // list of event id
 	ID          int32   `bson:"id"`
-	Modified    string  `bson:"modified"`
+	Modified    string  `bson:"modified,omitempty"`
 	Next        int32   `bson:"next"`     // id of the series which follows this series
 	Previous    int32   `bson:"previous"` // id of the series which preceded this series
-	Rating      string  `bson:"rating"`
-	StartYear   int32   `bson:"start_year"` // The date of publication of the series.
-	Stories     []int32 `bson:"stories"`    // list of story id
-	Thumbnail   string  `bson:"thumbnail"`  // url of thumbnail image
-	Title       string  `bson:"title"`
+	Rating      string  `bson:"rating,omitempty"`
+	StartYear   int32   `bson:"start_year"`          // The date of publication of the series.
+	Stories     []int32 `bson:"stories"`             // list of story id
+	Thumbnail   string  `bson:"thumbnail,omitempty"` // url of thumbnail image
+	Title       string  `bson:"title,omitempty"`
 	URLs        []*URL  `bson:"urls"` // list of resource urls
 }
 
-func (series *Series) Identify() int32 {
-	return series.ID
+func (series *Series) Identify() int {
+	return int(series.ID)
 }
 
 type Story struct {
@@ -131,19 +131,19 @@ type Story struct {
 	Characters    []int32 `bson:"characters"` // list of character id
 	Comics        []int32 `bson:"comics"`     // list of comic id
 	Creators      []int32 `bson:"creators"`   // list of creator id
-	Description   string  `bson:"description"`
+	Description   string  `bson:"description,omitempty"`
 	Events        []int32 `bson:"events"` // list of event id
 	ID            int32   `bson:"id"`
-	Modified      string  `bson:"modified"`
-	Originalissue int32   `json:"original_issue"` // comic id
-	Series        []int32 `bson:"series"`         // list of series id
-	Thumbnail     string  `bson:"thumbnail"`      // url of thumbnail image
-	Title         string  `bson:"title"`
-	Type          string  `bson:"type"`
+	Modified      string  `bson:"modified,omitempty"`
+	Originalissue int32   `json:"original_issue"`      // comic id
+	Series        []int32 `bson:"series"`              // list of series id
+	Thumbnail     string  `bson:"thumbnail,omitempty"` // url of thumbnail image
+	Title         string  `bson:"title,omitempty"`
+	Type          string  `bson:"type,omitempty"`
 }
 
-func (story *Story) Identify() int32 {
-	return story.ID
+func (story *Story) Identify() int {
+	return int(story.ID)
 }
 
 type ComicDate struct {

@@ -6,12 +6,12 @@ import (
 	"time"
 
 	"github.com/loivis/marvel-comics-api-data-loader/m27r"
-
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
 var defaultTimeout time.Duration = 5 * time.Second
@@ -35,12 +35,18 @@ func New(uri string, database string) (*MongoDB, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	opts := options.Client().
+		SetRetryWrites(true).
+		SetWriteConcern(
+			writeconcern.New(writeconcern.WMajority()),
+		)
+	client, err := mongo.Connect(ctx, opts.ApplyURI(uri))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to mongodb: %v", err)
 	}
 
-	err = client.Ping(ctx, readpref.Primary())
+	// set context to nil in order to get real error instead of early timeout
+	err = client.Ping(nil, readpref.Primary())
 	if err != nil {
 		return nil, fmt.Errorf("failed to ping mongodb: %v", err)
 	}
@@ -52,16 +58,18 @@ func New(uri string, database string) (*MongoDB, error) {
 	}, nil
 }
 
-func (m *MongoDB) GetCount(collection string) (count int64, err error) {
+func (m *MongoDB) GetCount(ctx context.Context, collection string) (int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
 	defer cancel()
 
 	col := m.client.Database(m.database).Collection(collection)
 
-	return col.CountDocuments(ctx, bson.D{})
+	count, err := col.CountDocuments(ctx, bson.D{})
+
+	return int(count), err
 }
 
-func (m *MongoDB) IncompleteIDs(collection string) ([]int32, error) {
+func (m *MongoDB) IncompleteIDs(ctx context.Context, collection string) ([]int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
 	defer cancel()
 
@@ -75,10 +83,10 @@ func (m *MongoDB) IncompleteIDs(collection string) ([]int32, error) {
 		return nil, fmt.Errorf("error finding incomplete documents: %v", err)
 	}
 
-	var ids []int32
+	var ids []int
 
 	for cur.Next(ctx) {
-		var elem struct{ ID int32 }
+		var elem struct{ ID int }
 		err := cur.Decode(&elem)
 		if err != nil {
 			return nil, fmt.Errorf("error decoding document: %v", err)
@@ -96,7 +104,7 @@ func (m *MongoDB) IncompleteIDs(collection string) ([]int32, error) {
 	return ids, nil
 }
 
-func (m *MongoDB) SaveCharacters(chars []*m27r.Character) error {
+func (m *MongoDB) SaveCharacters(ctx context.Context, chars []*m27r.Character) error {
 	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
 	defer cancel()
 
@@ -105,10 +113,10 @@ func (m *MongoDB) SaveCharacters(chars []*m27r.Character) error {
 		docs = append(docs, char)
 	}
 
-	return m.saveMany(ctx, docs)
+	return m.saveMany(ctx, ColCharacters, docs)
 }
 
-func (m *MongoDB) SaveComics(comics []*m27r.Comic) error {
+func (m *MongoDB) SaveComics(ctx context.Context, comics []*m27r.Comic) error {
 	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
 	defer cancel()
 
@@ -117,10 +125,10 @@ func (m *MongoDB) SaveComics(comics []*m27r.Comic) error {
 		docs = append(docs, comic)
 	}
 
-	return m.saveMany(ctx, docs)
+	return m.saveMany(ctx, ColComics, docs)
 }
 
-func (m *MongoDB) SaveCreators(creators []*m27r.Creator) error {
+func (m *MongoDB) SaveCreators(ctx context.Context, creators []*m27r.Creator) error {
 	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
 	defer cancel()
 
@@ -129,10 +137,10 @@ func (m *MongoDB) SaveCreators(creators []*m27r.Creator) error {
 		docs = append(docs, creator)
 	}
 
-	return m.saveMany(ctx, docs)
+	return m.saveMany(ctx, ColCreators, docs)
 }
 
-func (m *MongoDB) SaveEvents(events []*m27r.Event) error {
+func (m *MongoDB) SaveEvents(ctx context.Context, events []*m27r.Event) error {
 	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
 	defer cancel()
 
@@ -141,10 +149,10 @@ func (m *MongoDB) SaveEvents(events []*m27r.Event) error {
 		docs = append(docs, event)
 	}
 
-	return m.saveMany(ctx, docs)
+	return m.saveMany(ctx, ColEvents, docs)
 }
 
-func (m *MongoDB) SaveSeries(series []*m27r.Series) error {
+func (m *MongoDB) SaveSeries(ctx context.Context, series []*m27r.Series) error {
 	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
 	defer cancel()
 
@@ -153,10 +161,10 @@ func (m *MongoDB) SaveSeries(series []*m27r.Series) error {
 		docs = append(docs, s)
 	}
 
-	return m.saveMany(ctx, docs)
+	return m.saveMany(ctx, ColSeries, docs)
 }
 
-func (m *MongoDB) SaveStories(stories []*m27r.Story) error {
+func (m *MongoDB) SaveStories(ctx context.Context, stories []*m27r.Story) error {
 	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
 	defer cancel()
 
@@ -165,32 +173,13 @@ func (m *MongoDB) SaveStories(stories []*m27r.Story) error {
 		docs = append(docs, s)
 	}
 
-	return m.saveMany(ctx, docs)
+	return m.saveMany(ctx, ColStories, docs)
 }
 
-func (m *MongoDB) saveMany(ctx context.Context, docs []m27r.Doc) error {
+func (m *MongoDB) saveMany(ctx context.Context, collection string, docs []m27r.Doc) error {
 	if len(docs) == 0 {
 		log.Info().Msg("no docs to save")
 		return nil
-	}
-
-	var collection string
-
-	switch v := docs[0].(type) {
-	case *m27r.Character:
-		collection = ColCharacters
-	case *m27r.Comic:
-		collection = ColComics
-	case *m27r.Creator:
-		collection = ColCreators
-	case *m27r.Event:
-		collection = ColEvents
-	case *m27r.Series:
-		collection = ColSeries
-	case *m27r.Story:
-		collection = ColStories
-	default:
-		return fmt.Errorf("unsupported type: %T", v)
 	}
 
 	ids, err := m.getAllIds(ctx, collection)
@@ -221,7 +210,7 @@ func (m *MongoDB) saveMany(ctx context.Context, docs []m27r.Doc) error {
 	return nil
 }
 
-func (m *MongoDB) SaveOne(doc m27r.Doc) error {
+func (m *MongoDB) SaveOne(ctx context.Context, doc m27r.Doc) error {
 	var collection string
 	switch doc.(type) {
 	case *m27r.Character:
@@ -252,13 +241,13 @@ func (m *MongoDB) SaveOne(doc m27r.Doc) error {
 		return err
 	}
 
-	log.Info().Interface("result", result).Int32("id", id).Msgf("document %T(%d) replaced", doc, id)
+	log.Info().Interface("result", result).Int("id", id).Msgf("document %T(%d) replaced", doc, id)
 
 	return nil
 }
 
-func (m *MongoDB) getAllIds(ctx context.Context, collection string) ([]int32, error) {
-	ids := []int32{}
+func (m *MongoDB) getAllIds(ctx context.Context, collection string) ([]int, error) {
+	ids := []int{}
 
 	col := m.client.Database(m.database).Collection(string(collection))
 
@@ -268,7 +257,7 @@ func (m *MongoDB) getAllIds(ctx context.Context, collection string) ([]int32, er
 	}
 
 	for cur.Next(ctx) {
-		var elem struct{ ID int32 }
+		var elem struct{ ID int }
 
 		err := cur.Decode(&elem)
 		if err != nil {
@@ -287,14 +276,14 @@ func (m *MongoDB) getAllIds(ctx context.Context, collection string) ([]int32, er
 	return ids, nil
 }
 
-func diff(ids []int32, docs []m27r.Doc) []m27r.Doc {
-	m := make(map[int32]struct{}, len(ids))
+func diff(ids []int, docs []m27r.Doc) []m27r.Doc {
+	m := make(map[int]struct{}, len(ids))
 	for i := range ids {
 		m[ids[i]] = struct{}{}
 	}
 
 	var r []m27r.Doc
-	seen := map[int32]struct{}{}
+	seen := map[int]struct{}{}
 	for i := range docs {
 		if _, ok := m[docs[i].Identify()]; ok {
 			continue

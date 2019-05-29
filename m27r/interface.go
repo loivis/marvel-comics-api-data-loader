@@ -7,15 +7,15 @@ import (
 
 // Store .
 type Store interface {
-	GetCount(collection string) (count int64, err error)
-	IncompleteIDs(collection string) ([]int32, error)
-	SaveCharacters(chars []*Character) error
-	SaveComics(comics []*Comic) error
-	SaveCreators(creators []*Creator) error
-	SaveEvents(creators []*Event) error
-	SaveSeries(creators []*Series) error
-	SaveStories(creators []*Story) error
-	SaveOne(doc Doc) error
+	GetCount(ctx context.Context, collection string) (int, error)
+	IncompleteIDs(ctx context.Context, collection string) ([]int, error)
+	SaveCharacters(ctx context.Context, chars []*Character) error
+	SaveComics(ctx context.Context, comics []*Comic) error
+	SaveCreators(ctx context.Context, creators []*Creator) error
+	SaveEvents(ctx context.Context, events []*Event) error
+	SaveSeries(ctx context.Context, series []*Series) error
+	SaveStories(ctx context.Context, stories []*Story) error
+	SaveOne(ctx context.Context, doc Doc) error
 }
 
 // Params abstracts common features of all params
@@ -28,5 +28,5 @@ type Params interface {
 }
 
 type Doc interface {
-	Identify() int32
+	Identify() int
 }

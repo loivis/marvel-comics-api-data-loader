@@ -9,11 +9,11 @@ import (
 
 // doc implements m27r.Doc.
 type doc struct {
-	ID     int32
+	ID     int
 	Intact bool
 }
 
-func (doc *doc) Identify() int32 {
+func (doc *doc) Identify() int {
 	return doc.ID
 }
 
@@ -36,12 +36,12 @@ func TestMongoDB_GetCount(t *testing.T) {
 		context.Background(),
 		docs,
 	)
-	count, err := m.GetCount("foo")
+	count, err := m.GetCount(context.Background(), "foo")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if got, want := count, int64(len(docs)); got != want {
+	if got, want := count, len(docs); got != want {
 		t.Errorf("got  %d, want %d", got, want)
 	}
 }
@@ -72,7 +72,7 @@ func TestMongoDB_IncompleteIDs(t *testing.T) {
 
 	defer m.client.Database("marvel_test").Drop(context.Background())
 
-	ids, err := m.IncompleteIDs("foo")
+	ids, err := m.IncompleteIDs(context.Background(), "foo")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -96,14 +96,14 @@ func setupDatabase(database, collection string) (*MongoDB, []interface{}, error)
 	for i := 0; i < 77; i++ {
 		if i == 0 {
 			docs = append(docs, doc{
-				ID:     int32(i),
+				ID:     int(i),
 				Intact: false,
 			})
 			continue
 		}
 
 		docs = append(docs, doc{
-			ID:     int32(i),
+			ID:     int(i),
 			Intact: true,
 		})
 	}
@@ -119,31 +119,31 @@ func setupDatabase(database, collection string) (*MongoDB, []interface{}, error)
 func TestDiff(t *testing.T) {
 	for _, tc := range []struct {
 		desc string
-		ids  []int32
+		ids  []int
 		docs []m27r.Doc
 		out  []m27r.Doc
 	}{
 		{
 			desc: "NoDiff",
-			ids:  []int32{1, 2, 3, 4},
+			ids:  []int{1, 2, 3, 4},
 			docs: []m27r.Doc{&doc{ID: 1}, &doc{ID: 2}, &doc{ID: 3}, &doc{ID: 4}},
 			out:  []m27r.Doc{},
 		},
 		{
 			desc: "LessIncoming",
-			ids:  []int32{1, 2, 3, 4},
+			ids:  []int{1, 2, 3, 4},
 			docs: []m27r.Doc{&doc{ID: 1}, &doc{ID: 2}},
 			out:  []m27r.Doc{},
 		},
 		{
-			desc: "MoreInt32",
-			ids:  []int32{1, 2, 3, 4, 5, 6},
+			desc: "MoreInt",
+			ids:  []int{1, 2, 3, 4, 5, 6},
 			docs: []m27r.Doc{&doc{ID: 1}, &doc{ID: 2}, &doc{ID: 8}, &doc{ID: 3}, &doc{ID: 4}, &doc{ID: 7}, &doc{ID: 9}},
 			out:  []m27r.Doc{&doc{ID: 8}, &doc{ID: 7}, &doc{ID: 9}},
 		},
 		{
 			desc: "WithDuplicates",
-			ids:  []int32{1, 2, 3},
+			ids:  []int{1, 2, 3},
 			docs: []m27r.Doc{&doc{ID: 1}, &doc{ID: 2}, &doc{ID: 4}, &doc{ID: 3}, &doc{ID: 4}},
 			out:  []m27r.Doc{&doc{ID: 4}},
 		},
@@ -166,11 +166,11 @@ func TestDiff(t *testing.T) {
 }
 
 func BenchmarkDiff(b *testing.B) {
-	ids := []int32{}
+	ids := []int{}
 	var docs []m27r.Doc
 	for i := 0; i < 5000; i++ {
-		ids = append(ids, int32(i))
-		docs = append(docs, &doc{ID: int32(i)})
+		ids = append(ids, i)
+		docs = append(docs, &doc{ID: i})
 	}
 
 	for i := 0; i < b.N; i++ {

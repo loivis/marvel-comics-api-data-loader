@@ -22,12 +22,12 @@ func (p *Processor) loadCreators(ctx context.Context) error {
 		6213 => ...
 		skip load all creators based on comparison between api response and local storage.
 	*/
-	// err = p.loadAllCreatorsWithBasicInfo(ctx)
-	// if err != nil {
-	// 	return fmt.Errorf("error loading all creators info: %v", err)
-	// }
+	err = p.loadAllCreatorsWithBasicInfo(ctx)
+	if err != nil {
+		return fmt.Errorf("error loading all creators info: %v", err)
+	}
 
-	// log.Info().Msg("all creators loaded")
+	log.Info().Msg("all creators loaded")
 
 	err = p.complementAllCreators(ctx)
 	if err != nil {
@@ -44,36 +44,25 @@ func (p *Processor) loadAllCreatorsWithBasicInfo(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("error fetching creator count: %v", err)
 	}
-	log.Info().Str("type", "creator").Int32("count", remote).Msg("fetched")
+	log.Info().Str("type", "creator").Int("count", remote).Msg("creator count from api")
 
-	existing, err := p.store.GetCount("creators")
+	existing, err := p.store.GetCount(ctx, "creators")
 	if err != nil {
 		return err
 	}
-	log.Info().Str("type", "creator").Int64("count", existing).Msg("existing creators")
+	log.Info().Str("type", "creator").Int("count", existing).Msg("existing creator count")
 
-	if int64(remote) == existing {
-		log.Info().Int64("local", existing).Int32("remote", remote).Msg("no missing creators")
+	if int(remote) == existing {
+		log.Info().Int("local", existing).Int("remote", remote).Msg("no missing creators")
 		return nil
 	}
 
-	log.Info().Int64("local", existing).Int32("remote", remote).Msg("missing creators, reload")
-	creators, err := p.getAllCreators(ctx, int32(existing), remote)
-	if err != nil {
-		return fmt.Errorf("error getting all creators: %v", err)
-	}
+	log.Info().Int("local", existing).Int("remote", remote).Msg("missing creators, reload")
 
-	log.Info().Int("count", len(creators)).Msg("fetched all creators")
-
-	err = p.store.SaveCreators(creators)
-	if err != nil {
-		return fmt.Errorf("error storing creators: %v", err)
-	}
-
-	return nil
+	return p.loadMissingCreators(ctx, int32(existing), int32(remote))
 }
 
-func (p *Processor) getCreatorCount(ctx context.Context) (int32, error) {
+func (p *Processor) getCreatorCount(ctx context.Context) (int, error) {
 	var limit int32 = 1
 	params := &operations.GetCreatorCollectionParams{
 		Limit: &limit,
@@ -85,36 +74,73 @@ func (p *Processor) getCreatorCount(ctx context.Context) (int32, error) {
 		return 0, err
 	}
 
-	return col.Payload.Data.Total, nil
+	return int(col.Payload.Data.Total), nil
 }
 
-// assume that results in response from /v1/public/creators is an ordered list
-// so we can start from where we don't have data.
-func (p *Processor) getAllCreators(ctx context.Context, starting int32, count int32) ([]*m27r.Creator, error) {
-	var creators []*m27r.Creator
-
+func (p *Processor) loadMissingCreators(ctx context.Context, starting, count int32) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	creatorCh := make(chan *m27r.Creator, count)
+	creatorCh := make(chan *m27r.Creator, int32(p.concurrency)*p.limit)
 	conCh := make(chan struct{}, p.concurrency)
+	errCh := make(chan error, 1)
+	doneCh := make(chan struct{})
+
+	go func() {
+		var creators []*m27r.Creator
+		defer func() {
+			doneCh <- struct{}{}
+		}()
+
+		batchSave := func(creators []*m27r.Creator) error {
+			if err := p.store.SaveCreators(ctx, creators); err != nil {
+				return err
+			}
+
+			log.Info().Int("count", len(creators)).Msg("batch saved creators")
+
+			return nil
+		}
+
+		for creator := range creatorCh {
+			creators = append(creators, creator)
+
+			if len(creators) >= p.storeBatch {
+				if err := batchSave(creators); err != nil {
+					errCh <- err
+					break
+				}
+				creators = []*m27r.Creator{}
+			}
+		}
+
+		batchSave(creators)
+	}()
 
 	var g errgroup.Group
 
 	for i := int(starting / p.limit); i < int(count/p.limit)+1; i++ {
 		conCh <- struct{}{}
 		offset := p.limit * int32(i)
+
 		g.Go(func() error {
-			switch offset {
-			case 200, 5200: // containing wrong-type field creators: 9551, 10669
+			defer func() {
 				<-conCh
+			}()
+
+			switch offset {
+			case 200: // 10669.lastName
+				log.Error().Int32("offset", offset).Msgf("skipped due to unmarshalbility")
 				return nil
 			}
 
 			select {
+			case err := <-errCh: // check if any error saving data
+				cancel()
+				log.Info().Int32("offset", offset).Msgf("cancelled fetching paged creators: %v", err)
+				return fmt.Errorf("cancelled fetching paged creators limit %d offset %d: %v", p.limit, offset, err)
 			case <-ctx.Done(): // Check if ctx was cancelled in other goroutine
 				log.Info().Int32("offset", offset).Msg("ctx already cancelled")
-				<-conCh
 				return nil
 			default: // default to avoid blocking
 			}
@@ -129,14 +155,12 @@ func (p *Processor) getAllCreators(ctx context.Context, starting int32, count in
 			if err != nil {
 				cancel()
 				log.Info().Int32("offset", offset).Msg("cancelled fetching paged creators")
-				<-conCh
 				return fmt.Errorf("error fetching with limit %d offset %d: %v", p.limit, offset, err)
 			}
 
 			for _, res := range col.Payload.Data.Results {
 				creator, err := convertCreator(res)
 				if err != nil {
-					<-conCh
 					return err
 				}
 
@@ -145,28 +169,25 @@ func (p *Processor) getAllCreators(ctx context.Context, starting int32, count in
 
 			log.Info().Int32("offset", offset).Int32("count", col.Payload.Data.Count).Msg("fetched paged creators")
 
-			<-conCh
 			return nil
 		})
 	}
 
 	if err := g.Wait(); err != nil {
-		return nil, err
+		return err
 	}
 	close(creatorCh)
 
-	for creator := range creatorCh {
-		creators = append(creators, creator)
+	select {
+	case <-doneCh:
+		log.Info().Msg("fetched all missing creators with basic info")
 	}
 
-	return creators, nil
+	return nil
 }
 
 func (p *Processor) complementAllCreators(ctx context.Context) error {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	ids, err := p.store.IncompleteIDs("creators")
+	ids, err := p.store.IncompleteIDs(ctx, "creators")
 	if err != nil {
 		return fmt.Errorf("error get imcomplete creator ids: %v", err)
 	}
@@ -188,35 +209,25 @@ func (p *Processor) complementAllCreators(ctx context.Context) error {
 		id := id
 
 		g.Go(func() error {
-			select {
-			case <-ctx.Done(): // Check if ctx was cancelled in other goroutine
-				log.Info().Int32("id", id).Msg("ctx already cancelled")
+			defer func() {
 				<-conCh
-				return nil
-			default: // default to avoid blocking
-			}
+			}()
 
 			creator, err := p.getCreatorWithFullInfo(ctx, id)
 			if err != nil {
-				cancel()
-				log.Info().Int32("id", id).Msg("cancelled getting creator with full info")
-				<-conCh
 				return fmt.Errorf("error fetching creator %d: %v", id, err)
 			}
 
-			log.Info().Int32("id", id).Msgf("fetched creator with full info converted")
+			log.Info().Int("id", id).Msgf("fetched creator with full info converted")
 
-			err = p.store.SaveOne(creator)
+			err = p.store.SaveOne(ctx, creator)
 			if err != nil {
-				<-conCh
 				return fmt.Errorf("error saving creator %d: %v", id, err)
 			}
 
-			log.Info().Int32("id", id).Msgf("saved creator")
+			log.Info().Int("id", id).Msgf("saved creator")
 
-			log.Info().Int32("id", id).Msgf("complemented creator")
-
-			<-conCh
+			log.Info().Int("id", id).Msgf("complemented creator")
 
 			return nil
 		})
@@ -231,9 +242,9 @@ func (p *Processor) complementAllCreators(ctx context.Context) error {
 	return nil
 }
 
-func (p *Processor) getCreatorWithFullInfo(ctx context.Context, id int32) (*m27r.Creator, error) {
+func (p *Processor) getCreatorWithFullInfo(ctx context.Context, id int) (*m27r.Creator, error) {
 	params := &operations.GetCreatorIndividualParams{
-		CreatorID: id,
+		CreatorID: int32(id),
 	}
 	p.setParams(ctx, params)
 
@@ -243,7 +254,7 @@ func (p *Processor) getCreatorWithFullInfo(ctx context.Context, id int32) (*m27r
 		return nil, fmt.Errorf("error fetching creator %d: %v", id, err)
 	}
 
-	log.Info().Int32("id", id).Msg("fetched creator with basic info")
+	log.Info().Int("id", id).Msg("fetched creator with basic info")
 
 	/*
 		skip verification all below AS responses may differ between
@@ -255,19 +266,19 @@ func (p *Processor) getCreatorWithFullInfo(ctx context.Context, id int32) (*m27r
 	creator := indiv.Payload.Data.Results[0]
 
 	if creator.Comics.Available != creator.Comics.Returned {
-		chars, err := p.getCreatorComics(ctx, id, creator.Comics.Available)
+		comics, err := p.getCreatorComics(ctx, int32(id), creator.Comics.Available)
 		if err != nil {
 			return nil, fmt.Errorf("error fetching comics for creator %d: %v", id, err)
 		}
 
-		creator.Comics.Items = chars
+		creator.Comics.Items = comics
 		creator.Comics.Returned = creator.Comics.Available
 	} else {
-		log.Info().Int32("id", id).Int32("count", creator.Comics.Available).Msg("creator has complete comics")
+		log.Info().Int("id", id).Int32("count", creator.Comics.Available).Msg("creator has complete comics")
 	}
 
 	if creator.Events.Available != creator.Events.Returned {
-		events, err := p.getCreatorEvents(ctx, id, creator.Events.Available)
+		events, err := p.getCreatorEvents(ctx, int32(id), creator.Events.Available)
 		if err != nil {
 			return nil, fmt.Errorf("error fetching events for creator %d: %v", id, err)
 		}
@@ -275,11 +286,11 @@ func (p *Processor) getCreatorWithFullInfo(ctx context.Context, id int32) (*m27r
 		creator.Events.Items = events
 		creator.Events.Returned = creator.Events.Available
 	} else {
-		log.Info().Int32("id", id).Int32("count", creator.Events.Available).Msg("creator has complete events")
+		log.Info().Int("id", id).Int32("count", creator.Events.Available).Msg("creator has complete events")
 	}
 
 	if creator.Series.Available != creator.Series.Returned {
-		series, err := p.getCreatorSeries(ctx, id, creator.Series.Available)
+		series, err := p.getCreatorSeries(ctx, int32(id), creator.Series.Available)
 		if err != nil {
 			return nil, fmt.Errorf("error fetching series for creator %d: %v", id, err)
 		}
@@ -287,11 +298,11 @@ func (p *Processor) getCreatorWithFullInfo(ctx context.Context, id int32) (*m27r
 		creator.Series.Items = series
 		creator.Series.Returned = creator.Series.Available
 	} else {
-		log.Info().Int32("id", id).Int32("count", creator.Series.Available).Msg("creator has complete series")
+		log.Info().Int("id", id).Int32("count", creator.Series.Available).Msg("creator has complete series")
 	}
 
 	if creator.Stories.Available != creator.Stories.Returned {
-		stories, err := p.getCreatorStories(ctx, id, creator.Stories.Available)
+		stories, err := p.getCreatorStories(ctx, int32(id), creator.Stories.Available)
 		if err != nil {
 			return nil, fmt.Errorf("error fetching stories for creator %d: %v", id, err)
 		}
@@ -299,22 +310,19 @@ func (p *Processor) getCreatorWithFullInfo(ctx context.Context, id int32) (*m27r
 		creator.Stories.Items = stories
 		creator.Stories.Returned = creator.Stories.Available
 	} else {
-		log.Info().Int32("id", id).Int32("count", creator.Stories.Available).Msg("creator has complete stories")
+		log.Info().Int("id", id).Int32("count", creator.Stories.Available).Msg("creator has complete stories")
 	}
 
-	c, err := convertCreator(creator)
+	converted, err := convertCreator(creator)
 	if err != nil {
 		return nil, fmt.Errorf("error converting creator %d: %v", creator.ID, err)
 	}
 
-	return c, nil
+	return converted, nil
 }
 
 func (p *Processor) getCreatorComics(ctx context.Context, id, count int32) ([]*models.ComicSummary, error) {
 	var comics []*models.ComicSummary
-
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 
 	comicCh := make(chan *models.ComicSummary, count)
 	conCh := make(chan struct{}, p.concurrency)
@@ -326,13 +334,9 @@ func (p *Processor) getCreatorComics(ctx context.Context, id, count int32) ([]*m
 		offset := p.limit * int32(i)
 
 		g.Go(func() error {
-			select {
-			case <-ctx.Done(): // Check if ctx was cancelled in other goroutine
-				log.Info().Int32("creator_id", id).Int32("offset", offset).Msg("ctx already cancelled")
+			defer func() {
 				<-conCh
-				return nil
-			default: // default to avoid blocking
-			}
+			}()
 
 			params := &operations.GetComicsCollectionByCreatorIDParams{
 				CreatorID: id,
@@ -343,9 +347,6 @@ func (p *Processor) getCreatorComics(ctx context.Context, id, count int32) ([]*m
 
 			col, err := p.mclient.Operations.GetComicsCollectionByCreatorID(params)
 			if err != nil {
-				cancel()
-				log.Info().Int32("creator_id", id).Int32("offset", offset).Msg("cancelled getting comics for creator")
-				<-conCh
 				return fmt.Errorf("error fetching comics for creator %d, offset %d: %v", id, offset, err)
 			}
 
@@ -353,7 +354,6 @@ func (p *Processor) getCreatorComics(ctx context.Context, id, count int32) ([]*m
 				comicCh <- &models.ComicSummary{Name: comic.Title, ResourceURI: "fake-prefix/" + strconv.FormatInt(int64(comic.ID), 10)}
 			}
 
-			<-conCh
 			return nil
 		})
 	}
@@ -375,9 +375,6 @@ func (p *Processor) getCreatorComics(ctx context.Context, id, count int32) ([]*m
 func (p *Processor) getCreatorEvents(ctx context.Context, id, count int32) ([]*models.EventSummary, error) {
 	var events []*models.EventSummary
 
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
 	eventCh := make(chan *models.EventSummary, count)
 	conCh := make(chan struct{}, p.concurrency)
 
@@ -388,13 +385,9 @@ func (p *Processor) getCreatorEvents(ctx context.Context, id, count int32) ([]*m
 		offset := p.limit * int32(i)
 
 		g.Go(func() error {
-			select {
-			case <-ctx.Done(): // Check if ctx was cancelled in other goroutine
-				log.Info().Int32("creator_id", id).Int32("offset", offset).Msg("ctx already cancelled")
+			defer func() {
 				<-conCh
-				return nil
-			default: // default to avoid blocking
-			}
+			}()
 
 			params := &operations.GetCreatorEventsCollectionParams{
 				CreatorID: id,
@@ -405,9 +398,6 @@ func (p *Processor) getCreatorEvents(ctx context.Context, id, count int32) ([]*m
 
 			col, err := p.mclient.Operations.GetCreatorEventsCollection(params)
 			if err != nil {
-				cancel()
-				log.Info().Int32("creator_id", id).Int32("offset", offset).Msg("cancelled getting events for creator")
-				<-conCh
 				return fmt.Errorf("error fetching events for creator %d, offset %d: %v", id, offset, err)
 			}
 
@@ -415,7 +405,6 @@ func (p *Processor) getCreatorEvents(ctx context.Context, id, count int32) ([]*m
 				eventCh <- &models.EventSummary{Name: event.Title, ResourceURI: "fake-prefix/" + strconv.FormatInt(int64(event.ID), 10)}
 			}
 
-			<-conCh
 			return nil
 		})
 	}
@@ -437,9 +426,6 @@ func (p *Processor) getCreatorEvents(ctx context.Context, id, count int32) ([]*m
 func (p *Processor) getCreatorSeries(ctx context.Context, id, count int32) ([]*models.SeriesSummary, error) {
 	var series []*models.SeriesSummary
 
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
 	seriesCh := make(chan *models.SeriesSummary, count)
 	conCh := make(chan struct{}, p.concurrency)
 
@@ -450,13 +436,9 @@ func (p *Processor) getCreatorSeries(ctx context.Context, id, count int32) ([]*m
 		offset := p.limit * int32(i)
 
 		g.Go(func() error {
-			select {
-			case <-ctx.Done(): // Check if ctx was cancelled in other goroutine
-				log.Info().Int32("creator_id", id).Int32("offset", offset).Msg("ctx already cancelled")
+			defer func() {
 				<-conCh
-				return nil
-			default: // default to avoid blocking
-			}
+			}()
 
 			params := &operations.GetCreatorSeriesCollectionParams{
 				CreatorID: id,
@@ -467,9 +449,6 @@ func (p *Processor) getCreatorSeries(ctx context.Context, id, count int32) ([]*m
 
 			col, err := p.mclient.Operations.GetCreatorSeriesCollection(params)
 			if err != nil {
-				cancel()
-				log.Info().Int32("creator_id", id).Int32("offset", offset).Msg("cancelled getting series for creator")
-				<-conCh
 				return fmt.Errorf("error fetching series for creator %d, offset %d: %v", id, offset, err)
 			}
 
@@ -477,7 +456,6 @@ func (p *Processor) getCreatorSeries(ctx context.Context, id, count int32) ([]*m
 				seriesCh <- &models.SeriesSummary{Name: series.Title, ResourceURI: "fake-prefix/" + strconv.FormatInt(int64(series.ID), 10)}
 			}
 
-			<-conCh
 			return nil
 		})
 	}
@@ -499,9 +477,6 @@ func (p *Processor) getCreatorSeries(ctx context.Context, id, count int32) ([]*m
 func (p *Processor) getCreatorStories(ctx context.Context, id, count int32) ([]*models.StorySummary, error) {
 	var stories []*models.StorySummary
 
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
 	storyCh := make(chan *models.StorySummary, count)
 	conCh := make(chan struct{}, p.concurrency)
 
@@ -512,19 +487,9 @@ func (p *Processor) getCreatorStories(ctx context.Context, id, count int32) ([]*
 		offset := p.limit * int32(i)
 
 		g.Go(func() error {
-			switch {
-			case id == 2041 && offset == 0: // containing wrong-type field stories: 30688, 44568
+			defer func() {
 				<-conCh
-				return nil
-			}
-
-			select {
-			case <-ctx.Done(): // Check if ctx was cancelled in other goroutine
-				log.Info().Int32("creator_id", id).Int32("offset", offset).Msg("ctx already cancelled")
-				<-conCh
-				return nil
-			default: // default to avoid blocking
-			}
+			}()
 
 			params := &operations.GetCreatorStoryCollectionParams{
 				CreatorID: id,
@@ -535,9 +500,6 @@ func (p *Processor) getCreatorStories(ctx context.Context, id, count int32) ([]*
 
 			col, err := p.mclient.Operations.GetCreatorStoryCollection(params)
 			if err != nil {
-				cancel()
-				log.Info().Int32("creator_id", id).Int32("offset", offset).Msg("cancelled getting stories for creator")
-				<-conCh
 				return fmt.Errorf("error fetching stories for creator %d, offset %d: %v", id, offset, err)
 			}
 
@@ -545,7 +507,6 @@ func (p *Processor) getCreatorStories(ctx context.Context, id, count int32) ([]*
 				storyCh <- &models.StorySummary{Name: story.Title, ResourceURI: "fake-prefix/" + strconv.FormatInt(int64(story.ID), 10)}
 			}
 
-			<-conCh
 			return nil
 		})
 	}

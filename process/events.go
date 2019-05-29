@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/loivis/marvel-comics-api-data-loader/m27r"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/loivis/marvel-comics-api-data-loader/m27r"
 	"github.com/loivis/marvel-comics-api-data-loader/marvel/mclient/operations"
 	"github.com/loivis/marvel-comics-api-data-loader/marvel/models"
-	"github.com/rs/zerolog/log"
 )
 
 func (p *Processor) loadEvents(ctx context.Context) error {
@@ -39,25 +39,25 @@ func (p *Processor) loadAllEventsWithBasicInfo(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("error fetching event count: %v", err)
 	}
-	log.Info().Str("type", "event").Int32("count", remote).Msg("event count from api")
+	log.Info().Str("type", "event").Int("count", remote).Msg("event count from api")
 
-	existing, err := p.store.GetCount("events")
+	existing, err := p.store.GetCount(ctx, "events")
 	if err != nil {
 		return err
 	}
-	log.Info().Str("type", "event").Int64("count", existing).Msg("existing event count")
+	log.Info().Str("type", "event").Int("count", existing).Msg("existing event count")
 
-	if int64(remote) == existing {
-		log.Info().Int64("local", existing).Int32("remote", remote).Msg("no missing events")
+	if int(remote) == existing {
+		log.Info().Int("local", existing).Int("remote", remote).Msg("no missing events")
 		return nil
 	}
 
-	log.Info().Int64("local", existing).Int32("remote", remote).Msg("missing events, reload")
+	log.Info().Int("local", existing).Int("remote", remote).Msg("missing events, reload")
 
-	return p.loadMissingEvents(ctx, int32(existing), remote)
+	return p.loadMissingEvents(ctx, int32(existing), int32(remote))
 }
 
-func (p *Processor) getEventCount(ctx context.Context) (int32, error) {
+func (p *Processor) getEventCount(ctx context.Context) (int, error) {
 	var limit int32 = 1
 	params := &operations.GetEventsCollectionParams{
 		Limit: &limit,
@@ -69,7 +69,7 @@ func (p *Processor) getEventCount(ctx context.Context) (int32, error) {
 		return 0, err
 	}
 
-	return col.Payload.Data.Total, nil
+	return int(col.Payload.Data.Total), nil
 }
 
 func (p *Processor) loadMissingEvents(ctx context.Context, starting, count int32) error {
@@ -88,7 +88,7 @@ func (p *Processor) loadMissingEvents(ctx context.Context, starting, count int32
 		}()
 
 		batchSave := func(events []*m27r.Event) error {
-			if err := p.store.SaveEvents(events); err != nil {
+			if err := p.store.SaveEvents(ctx, events); err != nil {
 				return err
 			}
 
@@ -176,7 +176,7 @@ func (p *Processor) loadMissingEvents(ctx context.Context, starting, count int32
 }
 
 func (p *Processor) complementAllEvents(ctx context.Context) error {
-	ids, err := p.store.IncompleteIDs("events")
+	ids, err := p.store.IncompleteIDs(ctx, "events")
 	if err != nil {
 		return fmt.Errorf("error get imcomplete event ids: %v", err)
 	}
@@ -207,16 +207,16 @@ func (p *Processor) complementAllEvents(ctx context.Context) error {
 				return fmt.Errorf("error fetching event %d: %v", id, err)
 			}
 
-			log.Info().Int32("id", id).Msgf("fetched event with full info converted")
+			log.Info().Int("id", id).Msgf("fetched event with full info converted")
 
-			err = p.store.SaveOne(event)
+			err = p.store.SaveOne(ctx, event)
 			if err != nil {
 				return fmt.Errorf("error saving event %d: %v", id, err)
 			}
 
-			log.Info().Int32("id", id).Msgf("saved event")
+			log.Info().Int("id", id).Msgf("saved event")
 
-			log.Info().Int32("id", id).Msgf("complemented event")
+			log.Info().Int("id", id).Msgf("complemented event")
 
 			return nil
 		})
@@ -231,9 +231,9 @@ func (p *Processor) complementAllEvents(ctx context.Context) error {
 	return nil
 }
 
-func (p *Processor) getEventWithFullInfo(ctx context.Context, id int32) (*m27r.Event, error) {
+func (p *Processor) getEventWithFullInfo(ctx context.Context, id int) (*m27r.Event, error) {
 	params := &operations.GetEventIndividualParams{
-		EventID: id,
+		EventID: int32(id),
 	}
 	p.setParams(ctx, params)
 
@@ -243,12 +243,12 @@ func (p *Processor) getEventWithFullInfo(ctx context.Context, id int32) (*m27r.E
 		return nil, fmt.Errorf("error fetching event %d: %v", id, err)
 	}
 
-	log.Info().Int32("id", id).Msg("fetched event with basic info")
+	log.Info().Int("id", id).Msg("fetched event with basic info")
 
 	event := indiv.Payload.Data.Results[0]
 
 	if event.Characters.Available != event.Characters.Returned {
-		chars, err := p.getEventCharacters(ctx, id, event.Characters.Available)
+		chars, err := p.getEventCharacters(ctx, int32(id), event.Characters.Available)
 		if err != nil {
 			return nil, fmt.Errorf("error fetching characters for event %d: %v", id, err)
 		}
@@ -256,11 +256,11 @@ func (p *Processor) getEventWithFullInfo(ctx context.Context, id int32) (*m27r.E
 		event.Characters.Items = chars
 		event.Characters.Returned = event.Characters.Available
 	} else {
-		log.Info().Int32("id", id).Int32("count", event.Characters.Available).Msg("event has complete characters")
+		log.Info().Int("id", id).Int32("count", event.Characters.Available).Msg("event has complete characters")
 	}
 
 	if event.Comics.Available != event.Comics.Returned {
-		comics, err := p.getEventComics(ctx, id, event.Comics.Available)
+		comics, err := p.getEventComics(ctx, int32(id), event.Comics.Available)
 		if err != nil {
 			return nil, fmt.Errorf("error fetching comics for event %d: %v", id, err)
 		}
@@ -268,11 +268,11 @@ func (p *Processor) getEventWithFullInfo(ctx context.Context, id int32) (*m27r.E
 		event.Comics.Items = comics
 		event.Comics.Returned = event.Comics.Available
 	} else {
-		log.Info().Int32("id", id).Int32("count", event.Comics.Available).Msg("event has complete comics")
+		log.Info().Int("id", id).Int32("count", event.Comics.Available).Msg("event has complete comics")
 	}
 
 	if event.Creators.Available != event.Creators.Returned {
-		creators, err := p.getEventCreators(ctx, id, event.Creators.Available)
+		creators, err := p.getEventCreators(ctx, int32(id), event.Creators.Available)
 		if err != nil {
 			return nil, fmt.Errorf("error fetching creators for event %d: %v", id, err)
 		}
@@ -280,11 +280,11 @@ func (p *Processor) getEventWithFullInfo(ctx context.Context, id int32) (*m27r.E
 		event.Creators.Items = creators
 		event.Creators.Returned = event.Creators.Available
 	} else {
-		log.Info().Int32("id", id).Int32("count", event.Creators.Available).Msg("event has complete creators")
+		log.Info().Int("id", id).Int32("count", event.Creators.Available).Msg("event has complete creators")
 	}
 
 	if event.Series.Available != event.Series.Returned {
-		series, err := p.getEventSeries(ctx, id, event.Series.Available)
+		series, err := p.getEventSeries(ctx, int32(id), event.Series.Available)
 		if err != nil {
 			return nil, fmt.Errorf("error fetching series for event %d: %v", id, err)
 		}
@@ -292,11 +292,11 @@ func (p *Processor) getEventWithFullInfo(ctx context.Context, id int32) (*m27r.E
 		event.Series.Items = series
 		event.Series.Returned = event.Series.Available
 	} else {
-		log.Info().Int32("id", id).Int32("count", event.Series.Available).Msg("event has complete series")
+		log.Info().Int("id", id).Int32("count", event.Series.Available).Msg("event has complete series")
 	}
 
 	if event.Stories.Available != event.Stories.Returned {
-		stories, err := p.getEventStories(ctx, id, event.Stories.Available)
+		stories, err := p.getEventStories(ctx, int32(id), event.Stories.Available)
 		if err != nil {
 			return nil, fmt.Errorf("error fetching stories for event %d: %v", id, err)
 		}
@@ -304,15 +304,15 @@ func (p *Processor) getEventWithFullInfo(ctx context.Context, id int32) (*m27r.E
 		event.Stories.Items = stories
 		event.Stories.Returned = event.Stories.Available
 	} else {
-		log.Info().Int32("id", id).Int32("count", event.Stories.Available).Msg("event has complete stories")
+		log.Info().Int("id", id).Int32("count", event.Stories.Available).Msg("event has complete stories")
 	}
 
-	e, err := convertEvent(event)
+	converted, err := convertEvent(event)
 	if err != nil {
 		return nil, fmt.Errorf("error converting event %d: %v", event.ID, err)
 	}
 
-	return e, nil
+	return converted, nil
 }
 
 func (p *Processor) getEventCharacters(ctx context.Context, id, count int32) ([]*models.CharacterSummary, error) {
@@ -425,11 +425,9 @@ func (p *Processor) getEventCreators(ctx context.Context, id, count int32) ([]*m
 
 	var g errgroup.Group
 
-	limit := p.limit / 2 // story seems to contains too much data
-
-	for i := 0; i < int(count/limit)+1; i++ {
+	for i := 0; i < int(count/p.limit)+1; i++ {
 		conCh <- struct{}{}
-		offset := limit * int32(i)
+		offset := p.limit * int32(i)
 
 		g.Go(func() error {
 			defer func() {
@@ -438,7 +436,7 @@ func (p *Processor) getEventCreators(ctx context.Context, id, count int32) ([]*m
 
 			params := &operations.GetCreatorCollectionByEventIDParams{
 				EventID: id,
-				Limit:   &limit,
+				Limit:   &p.limit,
 				Offset:  &offset,
 			}
 			p.setParams(ctx, params)
