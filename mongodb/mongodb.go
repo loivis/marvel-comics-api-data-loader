@@ -3,6 +3,7 @@ package mongodb
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/loivis/marvel-comics-api-data-loader/m27r"
@@ -14,7 +15,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
-var defaultTimeout time.Duration = 5 * time.Second
+var defaultTimeout time.Duration = 15 * time.Second
 
 const (
 	ColCharacters = "characters"
@@ -29,6 +30,9 @@ type MongoDB struct {
 	client   *mongo.Client
 	database string
 	timeout  time.Duration
+
+	cacheMu  sync.Mutex
+	cacheIDs map[string][]int // map of collection to all ids
 }
 
 func New(uri string, database string) (*MongoDB, error) {
@@ -55,6 +59,7 @@ func New(uri string, database string) (*MongoDB, error) {
 		client:   client,
 		database: database,
 		timeout:  defaultTimeout,
+		cacheIDs: make(map[string][]int),
 	}, nil
 }
 
@@ -205,7 +210,14 @@ func (m *MongoDB) saveMany(ctx context.Context, collection string, docs []m27r.D
 		return err
 	}
 
-	log.Info().Int("count", len(many)).Msg("new docs saved")
+	log.Info().Int("count", len(many)).Msg("saved new docs")
+
+	m.cacheMu.Lock()
+	for _, doc := range newDocs {
+		m.cacheIDs[collection] = append(m.cacheIDs[collection], doc.Identify())
+	}
+	m.cacheMu.Unlock()
+	log.Info().Int("before", len(ids)).Int("after", len(ids)+len(newDocs)).Msg("added new doc ids to cache")
 
 	return nil
 }
@@ -247,6 +259,14 @@ func (m *MongoDB) SaveOne(ctx context.Context, doc m27r.Doc) error {
 }
 
 func (m *MongoDB) getAllIds(ctx context.Context, collection string) ([]int, error) {
+	m.cacheMu.Lock()
+	defer m.cacheMu.Unlock()
+
+	if ids, ok := m.cacheIDs[collection]; ok {
+		log.Info().Int("count", len(ids)).Msg("returned all ids from cache")
+		return ids, nil
+	}
+
 	ids := []int{}
 
 	col := m.client.Database(m.database).Collection(string(collection))
@@ -270,8 +290,11 @@ func (m *MongoDB) getAllIds(ctx context.Context, collection string) ([]int, erro
 
 		return nil, fmt.Errorf("error from cursor: %v", err)
 	}
-
 	cur.Close(ctx)
+
+	m.cacheIDs[collection] = ids
+
+	log.Info().Int("count", len(ids)).Msg("returned all ids from mongodb query")
 
 	return ids, nil
 }

@@ -47,21 +47,45 @@ func TestMongoDB_GetCount(t *testing.T) {
 }
 
 func TestMongoDB_GetAllIDs(t *testing.T) {
-	m, docs, err := setupDatabase("marvel_test", "foo")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	t.Run("FromCache", func(t *testing.T) {
+		m, _, err := setupDatabase("marvel_test", "foo")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 
-	defer m.client.Database("marvel_test").Drop(context.Background())
+		defer m.client.Database("marvel_test").Drop(context.Background())
 
-	si, err := m.getAllIds(context.Background(), "foo")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+		m.cacheIDs = map[string][]int{
+			"foo": {1, 2, 3},
+		}
 
-	if got, want := len(si), len(docs); got != want {
-		t.Errorf("got %d ids, want %d", got, want)
-	}
+		si, err := m.getAllIds(context.Background(), "foo")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		if got, want := len(si), len(m.cacheIDs["foo"]); got != want {
+			t.Errorf("got %d ids, want %d", got, want)
+		}
+	})
+
+	t.Run("FromDatabase", func(t *testing.T) {
+		m, docs, err := setupDatabase("marvel_test", "foo")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		defer m.client.Database("marvel_test").Drop(context.Background())
+
+		si, err := m.getAllIds(context.Background(), "foo")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		if got, want := len(si), len(docs); got != want {
+			t.Errorf("got %d ids, want %d", got, want)
+		}
+	})
 }
 
 func TestMongoDB_IncompleteIDs(t *testing.T) {
