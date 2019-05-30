@@ -2,6 +2,7 @@ package process
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -443,6 +444,10 @@ func (p *Processor) getEventCreators(ctx context.Context, id, count int32) ([]*m
 
 			col, err := p.mclient.Operations.GetCreatorCollectionByEventID(params)
 			if err != nil {
+				if _, ok := err.(*json.UnmarshalTypeError); ok {
+					log.Error().Int32("id", id).Int32("offset", offset).Msgf("skipped batch: %v", err)
+					return nil
+				}
 				return fmt.Errorf("error fetching creators for event %d, offset %d: %v", id, offset, err)
 			}
 
@@ -545,6 +550,10 @@ func (p *Processor) getEventStories(ctx context.Context, id, count int32) ([]*mo
 
 			col, err := p.mclient.Operations.GetEventStoryCollection(params)
 			if err != nil {
+				if _, ok := err.(*json.UnmarshalTypeError); ok {
+					log.Error().Int32("id", id).Int32("offset", offset).Msgf("skipped batch: %v", err)
+					return nil
+				}
 				return fmt.Errorf("error fetching stories for event %d, offset %d: %v", id, offset, err)
 			}
 
