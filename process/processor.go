@@ -8,8 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-openapi/runtime"
 	"github.com/loivis/marvel-comics-api-data-loader/m27r"
 	"github.com/loivis/marvel-comics-api-data-loader/marvel/mclient"
+	"github.com/rs/zerolog/log"
 )
 
 type Processor struct {
@@ -43,35 +45,35 @@ func NewProcessor(mc *mclient.Marvel, s m27r.Store, private, public string) *Pro
 func (p *Processor) Process(ctx context.Context) error {
 	var err error
 
-	// err = p.loadCharacters(ctx)
-	// if err != nil {
-	// 	return err
-	// }
+	err = p.loadCharacters(ctx)
+	if err != nil {
+		return err
+	}
 
-	// err = p.loadComics(ctx)
-	// if err != nil {
-	// 	return err
-	// }
+	err = p.loadComics(ctx)
+	if err != nil {
+		return err
+	}
 
-	// err = p.loadCreators(ctx)
-	// if err != nil {
-	// 	return err
-	// }
+	err = p.loadCreators(ctx)
+	if err != nil {
+		return err
+	}
 
 	err = p.loadEvents(ctx)
 	if err != nil {
 		return err
 	}
 
-	// err = p.loadSeries(ctx)
-	// if err != nil {
-	// 	return err
-	// }
+	err = p.loadSeries(ctx)
+	if err != nil {
+		return err
+	}
 
-	// err = p.loadStories(ctx)
-	// if err != nil {
-	// 	return err
-	// }
+	err = p.loadStories(ctx)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -94,4 +96,20 @@ func idFromURL(in string) (int32, error) {
 	}
 
 	return int32(id), nil
+}
+
+func retryIf(offset int32) func(error) bool {
+	return func(err error) bool {
+		if v, ok := err.(*runtime.APIError); ok && v.Code != 429 {
+			log.Error().Int32("offset", offset).Int("code", v.Code).Msg("retryable api error")
+			return true
+		}
+		return false
+	}
+}
+
+func retryLog(offset int32) func(uint, error) {
+	return func(n uint, err error) {
+		log.Info().Int32("offset", offset).Uint("n", n).Msg("retry on error")
+	}
 }

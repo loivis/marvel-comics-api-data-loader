@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/avast/retry-go"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 
@@ -93,7 +94,11 @@ func (p *Processor) loadMissingComics(ctx context.Context, starting, count int32
 		}()
 
 		batchSave := func(comics []*m27r.Comic) error {
-			if err := p.store.SaveComics(ctx, comics); err != nil {
+			err := retry.Do(func() error {
+				return p.store.SaveComics(ctx, comics)
+			})
+
+			if err != nil {
 				return err
 			}
 
@@ -145,23 +150,35 @@ func (p *Processor) loadMissingComics(ctx context.Context, starting, count int32
 			}
 			p.setParams(ctx, params)
 
-			col, err := p.mclient.Operations.GetComicsCollection(params)
+			err := retry.Do(
+				func() error {
+					col, err := p.mclient.Operations.GetComicsCollection(params)
+					if err != nil {
+						return err
+					}
+
+					for _, res := range col.Payload.Data.Results {
+						comic, err := convertComic(res)
+						if err != nil {
+							return err
+						}
+
+						comicCh <- comic
+					}
+
+					log.Info().Int32("offset", offset).Int32("count", col.Payload.Data.Count).Msg("fetched paged comics")
+
+					return nil
+				},
+				retry.OnRetry(retryLog(offset)),
+				retry.RetryIf(retryIf(offset)),
+			)
+
 			if err != nil {
 				cancel()
 				log.Info().Int32("offset", offset).Msg("cancelled fetching paged comics")
-				return fmt.Errorf("error fetching with limit %d offset %d: %v", p.limit, offset, err)
+				return fmt.Errorf("error fetching with limit %d offset %d: (%T) %v", p.limit, offset, err, err)
 			}
-
-			for _, res := range col.Payload.Data.Results {
-				comic, err := convertComic(res)
-				if err != nil {
-					return err
-				}
-
-				comicCh <- comic
-			}
-
-			log.Info().Int32("offset", offset).Int32("count", col.Payload.Data.Count).Msg("fetched paged comics")
 
 			return nil
 		})

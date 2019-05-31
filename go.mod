@@ -5,6 +5,7 @@ go 1.12
 require (
 	cloud.google.com/go v0.39.0
 	firebase.google.com/go v3.7.0+incompatible
+	github.com/avast/retry-go v2.3.0+incompatible
 	github.com/go-openapi/errors v0.19.0
 	github.com/go-openapi/runtime v0.19.0
 	github.com/go-openapi/strfmt v0.19.0

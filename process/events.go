@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/avast/retry-go"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 
@@ -89,7 +90,11 @@ func (p *Processor) loadMissingEvents(ctx context.Context, starting, count int32
 		}()
 
 		batchSave := func(events []*m27r.Event) error {
-			if err := p.store.SaveEvents(ctx, events); err != nil {
+			err := retry.Do(func() error {
+				return p.store.SaveEvents(ctx, events)
+			})
+
+			if err != nil {
 				return err
 			}
 
@@ -141,23 +146,35 @@ func (p *Processor) loadMissingEvents(ctx context.Context, starting, count int32
 			}
 			p.setParams(ctx, params)
 
-			col, err := p.mclient.Operations.GetEventsCollection(params)
+			err := retry.Do(
+				func() error {
+					col, err := p.mclient.Operations.GetEventsCollection(params)
+					if err != nil {
+						return err
+					}
+
+					for _, res := range col.Payload.Data.Results {
+						event, err := convertEvent(res)
+						if err != nil {
+							return err
+						}
+
+						eventCh <- event
+					}
+
+					log.Info().Int32("offset", offset).Int32("count", col.Payload.Data.Count).Msg("fetched paged events")
+
+					return nil
+				},
+				retry.OnRetry(retryLog(offset)),
+				retry.RetryIf(retryIf(offset)),
+			)
+
 			if err != nil {
 				cancel()
 				log.Info().Int32("offset", offset).Msg("cancelled fetching paged events")
-				return fmt.Errorf("error fetching with limit %d offset %d: %v", p.limit, offset, err)
+				return fmt.Errorf("error fetching with limit %d offset %d: (%T) %v", p.limit, offset, err, err)
 			}
-
-			for _, res := range col.Payload.Data.Results {
-				event, err := convertEvent(res)
-				if err != nil {
-					return err
-				}
-
-				eventCh <- event
-			}
-
-			log.Info().Int32("offset", offset).Int32("count", col.Payload.Data.Count).Msg("fetched paged events")
 
 			return nil
 		})

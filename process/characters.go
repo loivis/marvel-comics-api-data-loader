@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/avast/retry-go"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 
@@ -88,7 +89,11 @@ func (p *Processor) loadMissingCharacters(ctx context.Context, starting, count i
 		}()
 
 		batchSave := func(characters []*m27r.Character) error {
-			if err := p.store.SaveCharacters(ctx, characters); err != nil {
+			err := retry.Do(func() error {
+				return p.store.SaveCharacters(ctx, characters)
+			})
+
+			if err != nil {
 				return err
 			}
 
@@ -140,23 +145,35 @@ func (p *Processor) loadMissingCharacters(ctx context.Context, starting, count i
 			}
 			p.setParams(ctx, params)
 
-			col, err := p.mclient.Operations.GetCharactersCollection(params)
+			err := retry.Do(
+				func() error {
+					col, err := p.mclient.Operations.GetCharactersCollection(params)
+					if err != nil {
+						return err
+					}
+
+					for _, res := range col.Payload.Data.Results {
+						character, err := convertCharacter(res)
+						if err != nil {
+							return err
+						}
+
+						charCh <- character
+					}
+
+					log.Info().Int32("offset", offset).Int32("count", col.Payload.Data.Count).Msg("fetched paged characters")
+
+					return nil
+				},
+				retry.OnRetry(retryLog(offset)),
+				retry.RetryIf(retryIf(offset)),
+			)
+
 			if err != nil {
 				cancel()
 				log.Info().Int32("offset", offset).Msg("cancelled fetching paged characters")
-				return fmt.Errorf("error fetching with limit %d offset %d: %v", p.limit, offset, err)
+				return fmt.Errorf("error fetching with limit %d offset %d: (%T) %v", p.limit, offset, err, err)
 			}
-
-			for _, res := range col.Payload.Data.Results {
-				character, err := convertCharacter(res)
-				if err != nil {
-					return err
-				}
-
-				charCh <- character
-			}
-
-			log.Info().Int32("offset", offset).Int32("count", col.Payload.Data.Count).Msg("fetched paged characters")
 
 			return nil
 		})
