@@ -129,7 +129,7 @@ func (p *Processor) loadMissingCreators(ctx context.Context, starting, count int
 			}()
 
 			switch offset {
-			case 200: // 10669.lastName
+			case 200, 5200: // 10669.lastName, 9551.suffix
 				log.Error().Int32("offset", offset).Msgf("skipped due to unmarshalbility")
 				return nil
 			}
