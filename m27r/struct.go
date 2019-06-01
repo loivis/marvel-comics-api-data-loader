@@ -28,12 +28,14 @@ type Comic struct {
 	Creators           []int32       `bson:"creators"`         // list of creator id
 	Dates              []*ComicDate  `bson:"dates"`
 	Description        string        `bson:"description,omitempty"`
+	DiamondCode        int32         `bson:"diamond_code"`
 	DigitalID          int32         `bson:"digital_id"`
 	EAN                string        `bson:"ean,omitempty"`
 	Events             []int32       `bson:"events"` // list of event id
 	Format             string        `bson:"format,omitempty"`
 	ID                 int32         `bson:"id"`
 	Images             []string      `bson:"images"`
+	ISBN               string        `bson:"isbn,omitempty"`
 	ISSN               string        `bson:"issn,omitempty"`
 	IssueNumber        float64       `bson:"issue_number"`
 	Modified           string        `bson:"modified,omitempty"`
