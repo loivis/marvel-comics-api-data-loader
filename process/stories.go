@@ -10,9 +10,8 @@ import (
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/loivis/marvel-comics-api-data-loader/client/marvel"
 	"github.com/loivis/marvel-comics-api-data-loader/m27r"
-	"github.com/loivis/marvel-comics-api-data-loader/marvel/mclient/operations"
-	"github.com/loivis/marvel-comics-api-data-loader/marvel/models"
 )
 
 func (p *Processor) loadStories(ctx context.Context) error {
@@ -36,7 +35,7 @@ func (p *Processor) loadStories(ctx context.Context) error {
 }
 
 func (p *Processor) loadAllStoriesWithBasicInfo(ctx context.Context) error {
-	remote, err := p.getStoryCount(ctx)
+	remote, err := p.mclient.GetCount(ctx, m27r.TypeStories)
 	if err != nil {
 		return fmt.Errorf("error fetching story count: %v", err)
 	}
@@ -48,36 +47,21 @@ func (p *Processor) loadAllStoriesWithBasicInfo(ctx context.Context) error {
 	}
 	log.Info().Str("type", "story").Int("count", existing).Msg("existing story count")
 
-	if int(remote) == existing {
+	if remote == existing {
 		log.Info().Int("local", existing).Int("remote", remote).Msg("no missing stories")
 		return nil
 	}
 
 	log.Info().Int("local", existing).Int("remote", remote).Msg("missing stories, reload")
 
-	return p.loadMissingStories(ctx, int32(existing), int32(remote))
+	return p.loadMissingStories(ctx, existing, remote)
 }
 
-func (p *Processor) getStoryCount(ctx context.Context) (int, error) {
-	var limit int32 = 1
-	params := &operations.GetStoryCollectionParams{
-		Limit: &limit,
-	}
-	p.setParams(ctx, params)
-
-	col, err := p.mclient.Operations.GetStoryCollection(params)
-	if err != nil {
-		return 0, err
-	}
-
-	return int(col.Payload.Data.Total), nil
-}
-
-func (p *Processor) loadMissingStories(ctx context.Context, starting, count int32) error {
+func (p *Processor) loadMissingStories(ctx context.Context, starting, count int) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	storyCh := make(chan *m27r.Story, int32(p.concurrency)*p.limit)
+	storyCh := make(chan *m27r.Story, p.concurrency*p.limit)
 	conCh := make(chan struct{}, p.concurrency)
 	errCh := make(chan error, 1)
 	doneCh := make(chan struct{})
@@ -121,53 +105,41 @@ func (p *Processor) loadMissingStories(ctx context.Context, starting, count int3
 
 	for i := int(starting / p.limit); i < int(count/p.limit)+1; i++ {
 		conCh <- struct{}{}
-		offset := p.limit * int32(i)
+		offset := p.limit * i
 
 		g.Go(func() error {
 			defer func() {
 				<-conCh
 			}()
 
-			switch offset {
-			case 23000, 27200, 38300, 39500: // 24943.Title, 30688.Title, 43290.Description, 44568.Title
-				log.Error().Int32("offset", offset).Msgf("skipped due to unmarshalbility")
-				return nil
-			}
-
 			select {
 			case err := <-errCh: // check if any error saving data
 				cancel()
-				log.Info().Int32("offset", offset).Msgf("cancelled fetching paged stories: %v", err)
+				log.Info().Int("offset", offset).Msgf("cancelled fetching paged stories: %v", err)
 				return fmt.Errorf("cancelled fetching paged stories limit %d offset %d: %v", p.limit, offset, err)
 			case <-ctx.Done(): // Check if ctx was cancelled in other goroutine
-				log.Info().Int32("offset", offset).Msg("ctx already cancelled")
+				log.Info().Int("offset", offset).Msg("ctx already cancelled")
 				return nil
 			default: // default to avoid blocking
 			}
 
-			params := &operations.GetStoryCollectionParams{
-				Limit:  &p.limit,
-				Offset: &offset,
-			}
-			p.setParams(ctx, params)
-
 			err := retry.Do(
 				func() error {
-					col, err := p.mclient.Operations.GetStoryCollection(params)
+					stories, err := p.mclient.GetStories(ctx, &marvel.Params{Limit: p.limit, Offset: offset, OrderBy: "modified"})
 					if err != nil {
 						return err
 					}
 
-					for _, res := range col.Payload.Data.Results {
-						story, err := convertStory(res)
+					for _, story := range stories {
+						converted, err := convertStory(story)
 						if err != nil {
 							return err
 						}
 
-						storyCh <- story
+						storyCh <- converted
 					}
 
-					log.Info().Int32("offset", offset).Int32("count", col.Payload.Data.Count).Msg("fetched paged stories")
+					log.Info().Int("offset", offset).Int("count", len(stories)).Msg("fetched paged stories")
 
 					return nil
 				},
@@ -177,8 +149,8 @@ func (p *Processor) loadMissingStories(ctx context.Context, starting, count int3
 
 			if err != nil {
 				cancel()
-				log.Info().Int32("offset", offset).Msg("cancelled fetching paged stories")
-				return fmt.Errorf("error fetching with limit %d offset %d: (%T) %v", p.limit, offset, err, err)
+				log.Info().Int("offset", offset).Msg("cancelled fetching paged stories")
+				return fmt.Errorf("error fetching with limit %d offset %d: (%[3]T) %[3]v", p.limit, offset, err)
 			}
 
 			return nil
@@ -255,12 +227,7 @@ func (p *Processor) complementAllStories(ctx context.Context) error {
 }
 
 func (p *Processor) getStoryWithFullInfo(ctx context.Context, id int) (*m27r.Story, error) {
-	params := &operations.GetStoryIndividualParams{
-		StoryID: int32(id),
-	}
-	p.setParams(ctx, params)
-
-	indiv, err := p.mclient.Operations.GetStoryIndividual(params)
+	story, err := p.mclient.GetStory(ctx, id)
 	if err != nil {
 
 		return nil, fmt.Errorf("error fetching story %d: %v", id, err)
@@ -268,10 +235,8 @@ func (p *Processor) getStoryWithFullInfo(ctx context.Context, id int) (*m27r.Sto
 
 	log.Info().Int("id", id).Msg("fetched story with basic info")
 
-	story := indiv.Payload.Data.Results[0]
-
 	if story.Characters.Available != story.Characters.Returned {
-		chars, err := p.getStoryCharacters(ctx, int32(id), story.Characters.Available)
+		chars, err := p.getStoryCharacters(ctx, id, story.Characters.Available)
 		if err != nil {
 			return nil, fmt.Errorf("error fetching characters for story %d: %v", id, err)
 		}
@@ -279,11 +244,11 @@ func (p *Processor) getStoryWithFullInfo(ctx context.Context, id int) (*m27r.Sto
 		story.Characters.Items = chars
 		story.Characters.Returned = story.Characters.Available
 	} else {
-		log.Info().Int("id", id).Int32("count", story.Characters.Available).Msg("story has complete characters")
+		log.Info().Int("id", id).Int("count", story.Characters.Available).Msg("story has complete characters")
 	}
 
 	if story.Comics.Available != story.Comics.Returned {
-		comics, err := p.getStoryComics(ctx, int32(id), story.Comics.Available)
+		comics, err := p.getStoryComics(ctx, id, story.Comics.Available)
 		if err != nil {
 			return nil, fmt.Errorf("error fetching comics for story %d: %v", id, err)
 		}
@@ -291,11 +256,11 @@ func (p *Processor) getStoryWithFullInfo(ctx context.Context, id int) (*m27r.Sto
 		story.Comics.Items = comics
 		story.Comics.Returned = story.Comics.Available
 	} else {
-		log.Info().Int("id", id).Int32("count", story.Comics.Available).Msg("story has complete comics")
+		log.Info().Int("id", id).Int("count", story.Comics.Available).Msg("story has complete comics")
 	}
 
 	if story.Creators.Available != story.Creators.Returned {
-		creators, err := p.getStoryCreators(ctx, int32(id), story.Creators.Available)
+		creators, err := p.getStoryCreators(ctx, id, story.Creators.Available)
 		if err != nil {
 			return nil, fmt.Errorf("error fetching creators for story %d: %v", id, err)
 		}
@@ -303,11 +268,11 @@ func (p *Processor) getStoryWithFullInfo(ctx context.Context, id int) (*m27r.Sto
 		story.Creators.Items = creators
 		story.Creators.Returned = story.Creators.Available
 	} else {
-		log.Info().Int("id", id).Int32("count", story.Creators.Available).Msg("story has complete creators")
+		log.Info().Int("id", id).Int("count", story.Creators.Available).Msg("story has complete creators")
 	}
 
 	if story.Events.Available != story.Events.Returned {
-		events, err := p.getStoryEvents(ctx, int32(id), story.Events.Available)
+		events, err := p.getStoryEvents(ctx, id, story.Events.Available)
 		if err != nil {
 			return nil, fmt.Errorf("error fetching events for story %d: %v", id, err)
 		}
@@ -315,11 +280,11 @@ func (p *Processor) getStoryWithFullInfo(ctx context.Context, id int) (*m27r.Sto
 		story.Events.Items = events
 		story.Events.Returned = story.Events.Available
 	} else {
-		log.Info().Int("id", id).Int32("count", story.Events.Available).Msg("story has complete events")
+		log.Info().Int("id", id).Int("count", story.Events.Available).Msg("story has complete events")
 	}
 
 	if story.Series.Available != story.Series.Returned {
-		series, err := p.getStorySeries(ctx, int32(id), story.Series.Available)
+		series, err := p.getStorySeries(ctx, id, story.Series.Available)
 		if err != nil {
 			return nil, fmt.Errorf("error fetching series for story %d: %v", id, err)
 		}
@@ -327,7 +292,7 @@ func (p *Processor) getStoryWithFullInfo(ctx context.Context, id int) (*m27r.Sto
 		story.Series.Items = series
 		story.Series.Returned = story.Series.Available
 	} else {
-		log.Info().Int("id", id).Int32("count", story.Series.Available).Msg("story has complete series")
+		log.Info().Int("id", id).Int("count", story.Series.Available).Msg("story has complete series")
 	}
 
 	converted, err := convertStory(story)
@@ -338,37 +303,30 @@ func (p *Processor) getStoryWithFullInfo(ctx context.Context, id int) (*m27r.Sto
 	return converted, nil
 }
 
-func (p *Processor) getStoryCharacters(ctx context.Context, id, count int32) ([]*models.CharacterSummary, error) {
-	var chars []*models.CharacterSummary
+func (p *Processor) getStoryCharacters(ctx context.Context, id, count int) ([]*marvel.CharacterSummary, error) {
+	var chars []*marvel.CharacterSummary
 
-	charCh := make(chan *models.CharacterSummary, count)
+	charCh := make(chan *marvel.CharacterSummary, count)
 	conCh := make(chan struct{}, p.concurrency)
 
 	var g errgroup.Group
 
 	for i := 0; i < int(count/p.limit)+1; i++ {
 		conCh <- struct{}{}
-		offset := p.limit * int32(i)
+		offset := p.limit * i
 
 		g.Go(func() error {
 			defer func() {
 				<-conCh
 			}()
 
-			params := &operations.GetCharactersByStoryIDParams{
-				StoryID: id,
-				Limit:   &p.limit,
-				Offset:  &offset,
-			}
-			p.setParams(ctx, params)
-
-			col, err := p.mclient.Operations.GetCharactersByStoryID(params)
+			chars, err := p.mclient.GetStoryCharacters(ctx, id, &marvel.Params{Limit: p.limit, Offset: offset, OrderBy: "modified"})
 			if err != nil {
 				return fmt.Errorf("error fetching character for story %d, offset %d: %v", id, offset, err)
 			}
 
-			for _, char := range col.Payload.Data.Results {
-				charCh <- &models.CharacterSummary{Name: char.Name, ResourceURI: "fake-prefix/" + strconv.FormatInt(int64(char.ID), 10)}
+			for _, char := range chars {
+				charCh <- &marvel.CharacterSummary{Name: char.Name, ResourceURI: strconv.Itoa(char.ID)}
 			}
 
 			return nil
@@ -384,42 +342,35 @@ func (p *Processor) getStoryCharacters(ctx context.Context, id, count int32) ([]
 		chars = append(chars, char)
 	}
 
-	log.Info().Int("count", len(chars)).Int32("story_id", id).Msg("fetched characters for story")
+	log.Info().Int("count", len(chars)).Int("story_id", id).Msg("fetched characters for story")
 
 	return chars, nil
 }
 
-func (p *Processor) getStoryComics(ctx context.Context, id, count int32) ([]*models.ComicSummary, error) {
-	var comics []*models.ComicSummary
+func (p *Processor) getStoryComics(ctx context.Context, id, count int) ([]*marvel.ComicSummary, error) {
+	var comics []*marvel.ComicSummary
 
-	comicCh := make(chan *models.ComicSummary, count)
+	comicCh := make(chan *marvel.ComicSummary, count)
 	conCh := make(chan struct{}, p.concurrency)
 
 	var g errgroup.Group
 
 	for i := 0; i < int(count/p.limit)+1; i++ {
 		conCh <- struct{}{}
-		offset := p.limit * int32(i)
+		offset := p.limit * i
 
 		g.Go(func() error {
 			defer func() {
 				<-conCh
 			}()
 
-			params := &operations.GetComicsCollectionByStoryIDParams{
-				StoryID: id,
-				Limit:   &p.limit,
-				Offset:  &offset,
-			}
-			p.setParams(ctx, params)
-
-			col, err := p.mclient.Operations.GetComicsCollectionByStoryID(params)
+			comics, err := p.mclient.GetStoryComics(ctx, id, &marvel.Params{Limit: p.limit, Offset: offset, OrderBy: "modified"})
 			if err != nil {
 				return fmt.Errorf("error fetching comics for story %d, offset %d: %v", id, offset, err)
 			}
 
-			for _, comic := range col.Payload.Data.Results {
-				comicCh <- &models.ComicSummary{Name: comic.Title, ResourceURI: "fake-prefix/" + strconv.FormatInt(int64(comic.ID), 10)}
+			for _, comic := range comics {
+				comicCh <- &marvel.ComicSummary{Name: comic.Title, ResourceURI: strconv.Itoa(comic.ID)}
 			}
 
 			return nil
@@ -435,42 +386,35 @@ func (p *Processor) getStoryComics(ctx context.Context, id, count int32) ([]*mod
 		comics = append(comics, comic)
 	}
 
-	log.Info().Int("count", len(comics)).Int32("story_id", id).Msg("fetched comics for story")
+	log.Info().Int("count", len(comics)).Int("story_id", id).Msg("fetched comics for story")
 
 	return comics, nil
 }
 
-func (p *Processor) getStoryCreators(ctx context.Context, id, count int32) ([]*models.CreatorSummary, error) {
-	var creators []*models.CreatorSummary
+func (p *Processor) getStoryCreators(ctx context.Context, id, count int) ([]*marvel.CreatorSummary, error) {
+	var creators []*marvel.CreatorSummary
 
-	creatorCh := make(chan *models.CreatorSummary, count)
+	creatorCh := make(chan *marvel.CreatorSummary, count)
 	conCh := make(chan struct{}, p.concurrency)
 
 	var g errgroup.Group
 
 	for i := 0; i < int(count/p.limit)+1; i++ {
 		conCh <- struct{}{}
-		offset := p.limit * int32(i)
+		offset := p.limit * i
 
 		g.Go(func() error {
 			defer func() {
 				<-conCh
 			}()
 
-			params := &operations.GetCreatorCollectionByStoryIDParams{
-				StoryID: id,
-				Limit:   &p.limit,
-				Offset:  &offset,
-			}
-			p.setParams(ctx, params)
-
-			col, err := p.mclient.Operations.GetCreatorCollectionByStoryID(params)
+			creators, err := p.mclient.GetStoryCreators(ctx, id, &marvel.Params{Limit: p.limit, Offset: offset, OrderBy: "modified"})
 			if err != nil {
 				return fmt.Errorf("error fetching creators for story %d, offset %d: %v", id, offset, err)
 			}
 
-			for _, creator := range col.Payload.Data.Results {
-				creatorCh <- &models.CreatorSummary{Name: creator.FullName, ResourceURI: "fake-prefix/" + strconv.FormatInt(int64(creator.ID), 10)}
+			for _, creator := range creators {
+				creatorCh <- &marvel.CreatorSummary{Name: creator.FullName, ResourceURI: strconv.Itoa(creator.ID)}
 			}
 
 			return nil
@@ -486,42 +430,35 @@ func (p *Processor) getStoryCreators(ctx context.Context, id, count int32) ([]*m
 		creators = append(creators, creator)
 	}
 
-	log.Info().Int("count", len(creators)).Int32("story_id", id).Msg("fetched creators for story")
+	log.Info().Int("count", len(creators)).Int("story_id", id).Msg("fetched creators for story")
 
 	return creators, nil
 }
 
-func (p *Processor) getStoryEvents(ctx context.Context, id, count int32) ([]*models.EventSummary, error) {
-	var events []*models.EventSummary
+func (p *Processor) getStoryEvents(ctx context.Context, id, count int) ([]*marvel.EventSummary, error) {
+	var events []*marvel.EventSummary
 
-	eventCh := make(chan *models.EventSummary, count)
+	eventCh := make(chan *marvel.EventSummary, count)
 	conCh := make(chan struct{}, p.concurrency)
 
 	var g errgroup.Group
 
 	for i := 0; i < int(count/p.limit)+1; i++ {
 		conCh <- struct{}{}
-		offset := p.limit * int32(i)
+		offset := p.limit * i
 
 		g.Go(func() error {
 			defer func() {
 				<-conCh
 			}()
 
-			params := &operations.GetEventsCollectionByStoryIDParams{
-				StoryID: id,
-				Limit:   &p.limit,
-				Offset:  &offset,
-			}
-			p.setParams(ctx, params)
-
-			col, err := p.mclient.Operations.GetEventsCollectionByStoryID(params)
+			events, err := p.mclient.GetStoryEvents(ctx, id, &marvel.Params{Limit: p.limit, Offset: offset, OrderBy: "modified"})
 			if err != nil {
 				return fmt.Errorf("error fetching events for story %d, offset %d: %v", id, offset, err)
 			}
 
-			for _, event := range col.Payload.Data.Results {
-				eventCh <- &models.EventSummary{Name: event.Title, ResourceURI: "fake-prefix/" + strconv.FormatInt(int64(event.ID), 10)}
+			for _, event := range events {
+				eventCh <- &marvel.EventSummary{Name: event.Title, ResourceURI: strconv.Itoa(event.ID)}
 			}
 
 			return nil
@@ -537,42 +474,35 @@ func (p *Processor) getStoryEvents(ctx context.Context, id, count int32) ([]*mod
 		events = append(events, event)
 	}
 
-	log.Info().Int("count", len(events)).Int32("story_id", id).Msg("fetched events for story")
+	log.Info().Int("count", len(events)).Int("story_id", id).Msg("fetched events for story")
 
 	return events, nil
 }
 
-func (p *Processor) getStorySeries(ctx context.Context, id, count int32) ([]*models.SeriesSummary, error) {
-	var series []*models.SeriesSummary
+func (p *Processor) getStorySeries(ctx context.Context, id, count int) ([]*marvel.SeriesSummary, error) {
+	var series []*marvel.SeriesSummary
 
-	seriesCh := make(chan *models.SeriesSummary, count)
+	seriesCh := make(chan *marvel.SeriesSummary, count)
 	conCh := make(chan struct{}, p.concurrency)
 
 	var g errgroup.Group
 
 	for i := 0; i < int(count/p.limit)+1; i++ {
 		conCh <- struct{}{}
-		offset := p.limit * int32(i)
+		offset := p.limit * i
 
 		g.Go(func() error {
 			defer func() {
 				<-conCh
 			}()
 
-			params := &operations.GetStorySeriesCollectionParams{
-				StoryID: id,
-				Limit:   &p.limit,
-				Offset:  &offset,
-			}
-			p.setParams(ctx, params)
-
-			col, err := p.mclient.Operations.GetStorySeriesCollection(params)
+			series, err := p.mclient.GetStorySeries(ctx, id, &marvel.Params{Limit: p.limit, Offset: offset, OrderBy: "modified"})
 			if err != nil {
 				return fmt.Errorf("error fetching series for story %d, offset %d: %v", id, offset, err)
 			}
 
-			for _, series := range col.Payload.Data.Results {
-				seriesCh <- &models.SeriesSummary{Name: series.Title, ResourceURI: "fake-prefix/" + strconv.FormatInt(int64(series.ID), 10)}
+			for _, s := range series {
+				seriesCh <- &marvel.SeriesSummary{Name: s.Title, ResourceURI: strconv.Itoa(s.ID)}
 			}
 
 			return nil
@@ -588,12 +518,12 @@ func (p *Processor) getStorySeries(ctx context.Context, id, count int32) ([]*mod
 		series = append(series, s)
 	}
 
-	log.Info().Int("count", len(series)).Int32("story_id", id).Msg("fetched series for story")
+	log.Info().Int("count", len(series)).Int("story_id", id).Msg("fetched series for story")
 
 	return series, nil
 }
 
-func convertStory(in *models.Story) (*m27r.Story, error) {
+func convertStory(in *marvel.Story) (*m27r.Story, error) {
 	out := &m27r.Story{
 		Description: in.Description,
 		ID:          in.ID,

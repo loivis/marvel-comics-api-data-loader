@@ -10,18 +10,19 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/loivis/marvel-comics-api-data-loader/marvel/mclient"
+	"github.com/loivis/marvel-comics-api-data-loader/client/marvel"
 	"github.com/loivis/marvel-comics-api-data-loader/mongodb"
 	"github.com/loivis/marvel-comics-api-data-loader/process"
 )
 
 func main() {
+
 	conf := readConfig()
 	fmt.Fprintln(os.Stderr, conf)
 
 	ctx := context.Background()
 
-	marvelClient := mclient.Default
+	marvelClient := marvel.NewClient("https://gateway.marvel.com/v1/public/", conf.privateKey, conf.publicKey)
 
 	mongodb, err := mongodb.New(conf.mongodbURI, conf.mongodbDatabase)
 	if err != nil {
