@@ -11,7 +11,7 @@ func Test_IDFromURL(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		if got, want := id, int32(123); got != want {
+		if got, want := id, 123; got != want {
 			t.Errorf("got id %d, want %d", got, want)
 		}
 	})
@@ -22,7 +22,7 @@ func Test_IDFromURL(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		if got, want := id, int32(123); got != want {
+		if got, want := id, 123; got != want {
 			t.Errorf("got id %d, want %d", got, want)
 		}
 	})

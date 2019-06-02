@@ -2,24 +2,23 @@ package process
 
 import (
 	"context"
-	"crypto/md5"
-	"fmt"
+	"net"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/go-openapi/runtime"
-	"github.com/loivis/marvel-comics-api-data-loader/m27r"
-	"github.com/loivis/marvel-comics-api-data-loader/marvel/mclient"
 	"github.com/rs/zerolog/log"
+
+	"github.com/loivis/marvel-comics-api-data-loader/client/marvel"
+	"github.com/loivis/marvel-comics-api-data-loader/m27r"
 )
 
 type Processor struct {
-	mclient    *mclient.Marvel
+	mclient    *marvel.Client
 	privateKey string
 	publicKey  string
 	timeout    time.Duration
-	limit      int32
+	limit      int
 
 	store      m27r.Store
 	storeBatch int
@@ -27,7 +26,7 @@ type Processor struct {
 	concurrency int
 }
 
-func NewProcessor(mc *mclient.Marvel, s m27r.Store, private, public string) *Processor {
+func NewProcessor(mc *marvel.Client, s m27r.Store, private, public string) *Processor {
 	return &Processor{
 		mclient:    mc,
 		privateKey: private,
@@ -78,16 +77,7 @@ func (p *Processor) Process(ctx context.Context) error {
 	return nil
 }
 
-func (p *Processor) setParams(ctx context.Context, params m27r.Params) {
-	ts := fmt.Sprintf("%d", time.Now().Unix())
-	params.SetApikey(p.publicKey)
-	params.SetContext(ctx)
-	params.SetHash(fmt.Sprintf("%x", md5.Sum([]byte(ts+p.privateKey+p.publicKey))))
-	params.SetTs(ts)
-	params.SetTimeout(p.timeout)
-}
-
-func idFromURL(in string) (int32, error) {
+func idFromURL(in string) (int, error) {
 	ss := strings.Split(strings.Trim(in, "/"), "/")
 	s := ss[len(ss)-1]
 	id, err := strconv.Atoi(s)
@@ -95,21 +85,29 @@ func idFromURL(in string) (int32, error) {
 		return 0, err
 	}
 
-	return int32(id), nil
+	return id, nil
 }
 
-func retryIf(offset int32) func(error) bool {
+func retryIf(offset int) func(error) bool {
 	return func(err error) bool {
-		if v, ok := err.(*runtime.APIError); ok && v.Code != 429 {
-			log.Error().Int32("offset", offset).Int("code", v.Code).Msg("retryable api error")
+		if v, ok := err.(*marvel.APIError); ok && v.Code != 429 {
+			log.Error().Int("offset", offset).Int("code", v.Code).Msgf("retryable api error: %v", err)
 			return true
 		}
+
+		if err, ok := err.(net.Error); ok && err.Timeout() {
+			log.Error().Int("offset", offset).Msgf("retryable timeout %[1]T error: %[1]v", err)
+			return true
+		}
+
+		log.Error().Int("offset", offset).Msgf("non-retryable %[1]T error: %[1]v", err)
+
 		return false
 	}
 }
 
-func retryLog(offset int32) func(uint, error) {
+func retryLog(offset int) func(uint, error) {
 	return func(n uint, err error) {
-		log.Info().Int32("offset", offset).Uint("n", n).Msg("retry on error")
+		log.Info().Int("offset", offset).Uint("n", n).Msgf("retry on %[1]T error: %[1]v", err)
 	}
 }

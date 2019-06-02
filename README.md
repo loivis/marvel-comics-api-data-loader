@@ -47,17 +47,3 @@ MARVEL_API_PRIVATE_KEY="private_key" MARVE_API_PUBLIC_KEY="public_key" MONGODB_U
     + creator 10669 with `lastName` should be `string` but returns `number`
 
     + and more ...
-
-# Tools
-
-+ [api-spec-converter](https://www.npmjs.com/package/api-spec-converter)
-
-```
-api-spec-converter --from=swagger_1 --to=swagger_2 --syntax=json swagger/spec-1.0.json  > swagger/spec-2.0.json
-```
-
-+ [go-swagger](https://github.com/go-swagger/go-swagger)
-
-```
-swagger generate client -f swagger/spec-2.0.json  --default-scheme https -A marvel -c mclient
-```
