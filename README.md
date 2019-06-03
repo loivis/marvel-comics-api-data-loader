@@ -28,7 +28,7 @@ MARVEL_API_PRIVATE_KEY="private_key" MARVE_API_PUBLIC_KEY="public_key" MONGODB_U
 
     `available` for list of comics/events/series/stories returned from `/v1/public/characters/{characterId}` and `total` returned from `/v1/public/characters/{characterId}/{comics/events/series/stories}`
 
-+ Some field types don't follow api definition
++ Some field types don't follow api definition (fixed with custom json unmarshalling)
 
     + comic 39237 with `diamondCode` should be `string` but returns `number`
 
