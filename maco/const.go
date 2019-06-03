@@ -1,4 +1,4 @@
-package m27r
+package maco
 
 const (
 	TypeCharacters = "characters"

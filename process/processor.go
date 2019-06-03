@@ -10,7 +10,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/loivis/marvel-comics-api-data-loader/client/marvel"
-	"github.com/loivis/marvel-comics-api-data-loader/m27r"
+	"github.com/loivis/marvel-comics-api-data-loader/maco"
 )
 
 type Processor struct {
@@ -20,13 +20,13 @@ type Processor struct {
 	timeout    time.Duration
 	limit      int
 
-	store      m27r.Store
+	store      maco.Store
 	storeBatch int
 
 	concurrency int
 }
 
-func NewProcessor(mc *marvel.Client, s m27r.Store, private, public string) *Processor {
+func NewProcessor(mc *marvel.Client, s maco.Store, private, public string) *Processor {
 	return &Processor{
 		mclient:    mc,
 		privateKey: private,

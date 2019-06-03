@@ -11,7 +11,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/loivis/marvel-comics-api-data-loader/client/marvel"
-	"github.com/loivis/marvel-comics-api-data-loader/m27r"
+	"github.com/loivis/marvel-comics-api-data-loader/maco"
 )
 
 func (p *Processor) loadEvents(ctx context.Context) error {
@@ -35,7 +35,7 @@ func (p *Processor) loadEvents(ctx context.Context) error {
 }
 
 func (p *Processor) loadAllEventsWithBasicInfo(ctx context.Context) error {
-	remote, err := p.mclient.GetCount(ctx, m27r.TypeEvents)
+	remote, err := p.mclient.GetCount(ctx, maco.TypeEvents)
 	if err != nil {
 		return fmt.Errorf("error fetching event count: %v", err)
 	}
@@ -61,18 +61,18 @@ func (p *Processor) loadMissingEvents(ctx context.Context, starting, count int) 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	eventCh := make(chan *m27r.Event, p.concurrency*p.limit)
+	eventCh := make(chan *maco.Event, p.concurrency*p.limit)
 	conCh := make(chan struct{}, p.concurrency)
 	errCh := make(chan error, 1)
 	doneCh := make(chan struct{})
 
 	go func() {
-		var events []*m27r.Event
+		var events []*maco.Event
 		defer func() {
 			doneCh <- struct{}{}
 		}()
 
-		batchSave := func(events []*m27r.Event) error {
+		batchSave := func(events []*maco.Event) error {
 			err := retry.Do(func() error {
 				return p.store.SaveEvents(ctx, events)
 			})
@@ -94,7 +94,7 @@ func (p *Processor) loadMissingEvents(ctx context.Context, starting, count int) 
 					errCh <- err
 					break
 				}
-				events = []*m27r.Event{}
+				events = []*maco.Event{}
 			}
 		}
 
@@ -226,7 +226,7 @@ func (p *Processor) complementAllEvents(ctx context.Context) error {
 	return nil
 }
 
-func (p *Processor) getEventWithFullInfo(ctx context.Context, id int) (*m27r.Event, error) {
+func (p *Processor) getEventWithFullInfo(ctx context.Context, id int) (*maco.Event, error) {
 	event, err := p.mclient.GetEvent(ctx, id)
 	if err != nil {
 
@@ -531,8 +531,8 @@ func (p *Processor) getEventStories(ctx context.Context, id, count int) ([]*marv
 	return stories, nil
 }
 
-func convertEvent(in *marvel.Event) (*m27r.Event, error) {
-	out := &m27r.Event{
+func convertEvent(in *marvel.Event) (*maco.Event, error) {
+	out := &maco.Event{
 		Description: in.Description,
 		End:         in.End,
 		ID:          in.ID,
@@ -604,7 +604,7 @@ func convertEvent(in *marvel.Event) (*m27r.Event, error) {
 	}
 
 	for _, url := range in.URLs {
-		out.URLs = append(out.URLs, &m27r.URL{
+		out.URLs = append(out.URLs, &maco.URL{
 			Type: url.Type,
 			URL:  strings.Replace(strings.Split(url.URL, "?")[0], "http://", "https://", 1),
 		})

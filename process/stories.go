@@ -11,7 +11,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/loivis/marvel-comics-api-data-loader/client/marvel"
-	"github.com/loivis/marvel-comics-api-data-loader/m27r"
+	"github.com/loivis/marvel-comics-api-data-loader/maco"
 )
 
 func (p *Processor) loadStories(ctx context.Context) error {
@@ -35,7 +35,7 @@ func (p *Processor) loadStories(ctx context.Context) error {
 }
 
 func (p *Processor) loadAllStoriesWithBasicInfo(ctx context.Context) error {
-	remote, err := p.mclient.GetCount(ctx, m27r.TypeStories)
+	remote, err := p.mclient.GetCount(ctx, maco.TypeStories)
 	if err != nil {
 		return fmt.Errorf("error fetching story count: %v", err)
 	}
@@ -61,18 +61,18 @@ func (p *Processor) loadMissingStories(ctx context.Context, starting, count int)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	storyCh := make(chan *m27r.Story, p.concurrency*p.limit)
+	storyCh := make(chan *maco.Story, p.concurrency*p.limit)
 	conCh := make(chan struct{}, p.concurrency)
 	errCh := make(chan error, 1)
 	doneCh := make(chan struct{})
 
 	go func() {
-		var stories []*m27r.Story
+		var stories []*maco.Story
 		defer func() {
 			doneCh <- struct{}{}
 		}()
 
-		batchSave := func(stories []*m27r.Story) error {
+		batchSave := func(stories []*maco.Story) error {
 			err := retry.Do(func() error {
 				return p.store.SaveStories(ctx, stories)
 			})
@@ -94,7 +94,7 @@ func (p *Processor) loadMissingStories(ctx context.Context, starting, count int)
 					errCh <- err
 					break
 				}
-				stories = []*m27r.Story{}
+				stories = []*maco.Story{}
 			}
 		}
 
@@ -226,7 +226,7 @@ func (p *Processor) complementAllStories(ctx context.Context) error {
 	return nil
 }
 
-func (p *Processor) getStoryWithFullInfo(ctx context.Context, id int) (*m27r.Story, error) {
+func (p *Processor) getStoryWithFullInfo(ctx context.Context, id int) (*maco.Story, error) {
 	story, err := p.mclient.GetStory(ctx, id)
 	if err != nil {
 
@@ -523,8 +523,8 @@ func (p *Processor) getStorySeries(ctx context.Context, id, count int) ([]*marve
 	return series, nil
 }
 
-func convertStory(in *marvel.Story) (*m27r.Story, error) {
-	out := &m27r.Story{
+func convertStory(in *marvel.Story) (*maco.Story, error) {
+	out := &maco.Story{
 		Description: in.Description,
 		ID:          in.ID,
 		Modified:    in.Modified,

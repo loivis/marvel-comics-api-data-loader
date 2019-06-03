@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/loivis/marvel-comics-api-data-loader/m27r"
+	"github.com/loivis/marvel-comics-api-data-loader/maco"
 )
 
-// doc implements m27r.Doc.
+// doc implements maco.Doc.
 type doc struct {
 	ID     int
 	Intact bool
@@ -144,32 +144,32 @@ func TestDiff(t *testing.T) {
 	for _, tc := range []struct {
 		desc string
 		ids  []int
-		docs []m27r.Doc
-		out  []m27r.Doc
+		docs []maco.Doc
+		out  []maco.Doc
 	}{
 		{
 			desc: "NoDiff",
 			ids:  []int{1, 2, 3, 4},
-			docs: []m27r.Doc{&doc{ID: 1}, &doc{ID: 2}, &doc{ID: 3}, &doc{ID: 4}},
-			out:  []m27r.Doc{},
+			docs: []maco.Doc{&doc{ID: 1}, &doc{ID: 2}, &doc{ID: 3}, &doc{ID: 4}},
+			out:  []maco.Doc{},
 		},
 		{
 			desc: "LessIncoming",
 			ids:  []int{1, 2, 3, 4},
-			docs: []m27r.Doc{&doc{ID: 1}, &doc{ID: 2}},
-			out:  []m27r.Doc{},
+			docs: []maco.Doc{&doc{ID: 1}, &doc{ID: 2}},
+			out:  []maco.Doc{},
 		},
 		{
 			desc: "MoreInt",
 			ids:  []int{1, 2, 3, 4, 5, 6},
-			docs: []m27r.Doc{&doc{ID: 1}, &doc{ID: 2}, &doc{ID: 8}, &doc{ID: 3}, &doc{ID: 4}, &doc{ID: 7}, &doc{ID: 9}},
-			out:  []m27r.Doc{&doc{ID: 8}, &doc{ID: 7}, &doc{ID: 9}},
+			docs: []maco.Doc{&doc{ID: 1}, &doc{ID: 2}, &doc{ID: 8}, &doc{ID: 3}, &doc{ID: 4}, &doc{ID: 7}, &doc{ID: 9}},
+			out:  []maco.Doc{&doc{ID: 8}, &doc{ID: 7}, &doc{ID: 9}},
 		},
 		{
 			desc: "WithDuplicates",
 			ids:  []int{1, 2, 3},
-			docs: []m27r.Doc{&doc{ID: 1}, &doc{ID: 2}, &doc{ID: 4}, &doc{ID: 3}, &doc{ID: 4}},
-			out:  []m27r.Doc{&doc{ID: 4}},
+			docs: []maco.Doc{&doc{ID: 1}, &doc{ID: 2}, &doc{ID: 4}, &doc{ID: 3}, &doc{ID: 4}},
+			out:  []maco.Doc{&doc{ID: 4}},
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
@@ -191,7 +191,7 @@ func TestDiff(t *testing.T) {
 
 func BenchmarkDiff(b *testing.B) {
 	ids := []int{}
-	var docs []m27r.Doc
+	var docs []maco.Doc
 	for i := 0; i < 5000; i++ {
 		ids = append(ids, i)
 		docs = append(docs, &doc{ID: i})

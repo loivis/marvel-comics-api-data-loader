@@ -11,7 +11,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/loivis/marvel-comics-api-data-loader/client/marvel"
-	"github.com/loivis/marvel-comics-api-data-loader/m27r"
+	"github.com/loivis/marvel-comics-api-data-loader/maco"
 )
 
 func (p *Processor) loadCreators(ctx context.Context) error {
@@ -40,7 +40,7 @@ func (p *Processor) loadCreators(ctx context.Context) error {
 }
 
 func (p *Processor) loadAllCreatorsWithBasicInfo(ctx context.Context) error {
-	remote, err := p.mclient.GetCount(ctx, m27r.TypeCreators)
+	remote, err := p.mclient.GetCount(ctx, maco.TypeCreators)
 	if err != nil {
 		return fmt.Errorf("error fetching creator count: %v", err)
 	}
@@ -66,18 +66,18 @@ func (p *Processor) loadMissingCreators(ctx context.Context, starting, count int
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	creatorCh := make(chan *m27r.Creator, p.concurrency*p.limit)
+	creatorCh := make(chan *maco.Creator, p.concurrency*p.limit)
 	conCh := make(chan struct{}, p.concurrency)
 	errCh := make(chan error, 1)
 	doneCh := make(chan struct{})
 
 	go func() {
-		var creators []*m27r.Creator
+		var creators []*maco.Creator
 		defer func() {
 			doneCh <- struct{}{}
 		}()
 
-		batchSave := func(creators []*m27r.Creator) error {
+		batchSave := func(creators []*maco.Creator) error {
 			err := retry.Do(func() error {
 				return p.store.SaveCreators(ctx, creators)
 			})
@@ -99,7 +99,7 @@ func (p *Processor) loadMissingCreators(ctx context.Context, starting, count int
 					errCh <- err
 					break
 				}
-				creators = []*m27r.Creator{}
+				creators = []*maco.Creator{}
 			}
 		}
 
@@ -231,7 +231,7 @@ func (p *Processor) complementAllCreators(ctx context.Context) error {
 	return nil
 }
 
-func (p *Processor) getCreatorWithFullInfo(ctx context.Context, id int) (*m27r.Creator, error) {
+func (p *Processor) getCreatorWithFullInfo(ctx context.Context, id int) (*maco.Creator, error) {
 	creator, err := p.mclient.GetCreator(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching creator %d: %v", id, err)
@@ -478,8 +478,8 @@ func (p *Processor) getCreatorStories(ctx context.Context, id, count int) ([]*ma
 	return stories, nil
 }
 
-func convertCreator(in *marvel.Creator) (*m27r.Creator, error) {
-	out := &m27r.Creator{
+func convertCreator(in *marvel.Creator) (*maco.Creator, error) {
+	out := &maco.Creator{
 		FirtName:   in.FirstName,
 		FullName:   in.FullName,
 		ID:         in.ID,
@@ -527,7 +527,7 @@ func convertCreator(in *marvel.Creator) (*m27r.Creator, error) {
 	}
 
 	for _, url := range in.URLs {
-		out.URLs = append(out.URLs, &m27r.URL{
+		out.URLs = append(out.URLs, &maco.URL{
 			Type: url.Type,
 			URL:  strings.Replace(strings.Split(url.URL, "?")[0], "http://", "https://", 1),
 		})

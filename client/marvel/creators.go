@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/loivis/marvel-comics-api-data-loader/m27r"
+	"github.com/loivis/marvel-comics-api-data-loader/maco"
 )
 
 // GetCreator returns the creator of specified id with given Params.
 func (c *Client) GetCreator(ctx context.Context, id int) (*Creator, error) {
-	resp, err := c.get(ctx, &Params{typ: m27r.TypeCreators, id: &id})
+	resp, err := c.get(ctx, &Params{typ: maco.TypeCreators, id: &id})
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func (c *Client) GetCreators(ctx context.Context, params *Params) ([]*Creator, e
 		return nil, errors.New("params is nil")
 	}
 
-	params.typ = m27r.TypeCreators
+	params.typ = maco.TypeCreators
 
 	return c.getCreators(ctx, params)
 }
@@ -50,9 +50,9 @@ func (c *Client) GetComicCreators(ctx context.Context, id int, params *Params) (
 		return nil, errors.New("params is nil")
 	}
 
-	params.typ = m27r.TypeComics
+	params.typ = maco.TypeComics
 	params.id = &id
-	params.subtype = m27r.TypeCreators
+	params.subtype = maco.TypeCreators
 
 	return c.getCreators(ctx, params)
 }
@@ -63,9 +63,9 @@ func (c *Client) GetEventCreators(ctx context.Context, id int, params *Params) (
 		return nil, errors.New("params is nil")
 	}
 
-	params.typ = m27r.TypeEvents
+	params.typ = maco.TypeEvents
 	params.id = &id
-	params.subtype = m27r.TypeCreators
+	params.subtype = maco.TypeCreators
 
 	return c.getCreators(ctx, params)
 }
@@ -76,9 +76,9 @@ func (c *Client) GetSeriesCreators(ctx context.Context, id int, params *Params) 
 		return nil, errors.New("params is nil")
 	}
 
-	params.typ = m27r.TypeSeries
+	params.typ = maco.TypeSeries
 	params.id = &id
-	params.subtype = m27r.TypeCreators
+	params.subtype = maco.TypeCreators
 
 	return c.getCreators(ctx, params)
 }
@@ -89,9 +89,9 @@ func (c *Client) GetStoryCreators(ctx context.Context, id int, params *Params) (
 		return nil, errors.New("params is nil")
 	}
 
-	params.typ = m27r.TypeStories
+	params.typ = maco.TypeStories
 	params.id = &id
-	params.subtype = m27r.TypeCreators
+	params.subtype = maco.TypeCreators
 
 	return c.getCreators(ctx, params)
 }

@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/loivis/marvel-comics-api-data-loader/m27r"
+	"github.com/loivis/marvel-comics-api-data-loader/maco"
 )
 
 // GetCharacter returns the character of specified id with given Params.
 func (c *Client) GetCharacter(ctx context.Context, id int) (*Character, error) {
-	resp, err := c.get(ctx, &Params{typ: m27r.TypeCharacters, id: &id})
+	resp, err := c.get(ctx, &Params{typ: maco.TypeCharacters, id: &id})
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func (c *Client) GetCharacters(ctx context.Context, params *Params) ([]*Characte
 		return nil, errors.New("params is nil")
 	}
 
-	params.typ = m27r.TypeCharacters
+	params.typ = maco.TypeCharacters
 
 	return c.getCharacters(ctx, params)
 }
@@ -50,9 +50,9 @@ func (c *Client) GetComicCharacters(ctx context.Context, id int, params *Params)
 		return nil, errors.New("params is nil")
 	}
 
-	params.typ = m27r.TypeComics
+	params.typ = maco.TypeComics
 	params.id = &id
-	params.subtype = m27r.TypeCharacters
+	params.subtype = maco.TypeCharacters
 
 	return c.getCharacters(ctx, params)
 }
@@ -63,9 +63,9 @@ func (c *Client) GetEventCharacters(ctx context.Context, id int, params *Params)
 		return nil, errors.New("params is nil")
 	}
 
-	params.typ = m27r.TypeEvents
+	params.typ = maco.TypeEvents
 	params.id = &id
-	params.subtype = m27r.TypeCharacters
+	params.subtype = maco.TypeCharacters
 
 	return c.getCharacters(ctx, params)
 }
@@ -76,9 +76,9 @@ func (c *Client) GetSeriesCharacters(ctx context.Context, id int, params *Params
 		return nil, errors.New("params is nil")
 	}
 
-	params.typ = m27r.TypeSeries
+	params.typ = maco.TypeSeries
 	params.id = &id
-	params.subtype = m27r.TypeCharacters
+	params.subtype = maco.TypeCharacters
 
 	return c.getCharacters(ctx, params)
 }
@@ -89,9 +89,9 @@ func (c *Client) GetStoryCharacters(ctx context.Context, id int, params *Params)
 		return nil, errors.New("params is nil")
 	}
 
-	params.typ = m27r.TypeStories
+	params.typ = maco.TypeStories
 	params.id = &id
-	params.subtype = m27r.TypeCharacters
+	params.subtype = maco.TypeCharacters
 
 	return c.getCharacters(ctx, params)
 }

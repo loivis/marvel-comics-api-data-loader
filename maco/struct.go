@@ -1,4 +1,4 @@
-package m27r
+package maco
 
 type Character struct {
 	Intact bool `bson:"intact"` // indicator if any data missing

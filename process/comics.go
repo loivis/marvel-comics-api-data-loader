@@ -11,7 +11,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/loivis/marvel-comics-api-data-loader/client/marvel"
-	"github.com/loivis/marvel-comics-api-data-loader/m27r"
+	"github.com/loivis/marvel-comics-api-data-loader/maco"
 )
 
 func (p *Processor) loadComics(ctx context.Context) error {
@@ -40,7 +40,7 @@ func (p *Processor) loadComics(ctx context.Context) error {
 }
 
 func (p *Processor) loadAllComicsWithBasicInfo(ctx context.Context) error {
-	remote, err := p.mclient.GetCount(ctx, m27r.TypeComics)
+	remote, err := p.mclient.GetCount(ctx, maco.TypeComics)
 	if err != nil {
 		return fmt.Errorf("error fetching comic count: %v", err)
 	}
@@ -66,18 +66,18 @@ func (p *Processor) loadMissingComics(ctx context.Context, starting, count int) 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	comicCh := make(chan *m27r.Comic, p.concurrency*p.limit)
+	comicCh := make(chan *maco.Comic, p.concurrency*p.limit)
 	conCh := make(chan struct{}, p.concurrency)
 	errCh := make(chan error, 1)
 	doneCh := make(chan struct{})
 
 	go func() {
-		var comics []*m27r.Comic
+		var comics []*maco.Comic
 		defer func() {
 			doneCh <- struct{}{}
 		}()
 
-		batchSave := func(comics []*m27r.Comic) error {
+		batchSave := func(comics []*maco.Comic) error {
 			err := retry.Do(func() error {
 				return p.store.SaveComics(ctx, comics)
 			})
@@ -99,7 +99,7 @@ func (p *Processor) loadMissingComics(ctx context.Context, starting, count int) 
 					errCh <- err
 					break
 				}
-				comics = []*m27r.Comic{}
+				comics = []*maco.Comic{}
 			}
 		}
 
@@ -231,7 +231,7 @@ func (p *Processor) complementAllComics(ctx context.Context) error {
 	return nil
 }
 
-func (p *Processor) getComicWithFullInfo(ctx context.Context, id int) (*m27r.Comic, error) {
+func (p *Processor) getComicWithFullInfo(ctx context.Context, id int) (*maco.Comic, error) {
 	comic, err := p.mclient.GetComic(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching comic %d: %v", id, err)
@@ -471,8 +471,8 @@ func (p *Processor) getComicStories(ctx context.Context, id, count int) ([]*marv
 	return stories, nil
 }
 
-func convertComic(in *marvel.Comic) (*m27r.Comic, error) {
-	out := &m27r.Comic{
+func convertComic(in *marvel.Comic) (*maco.Comic, error) {
+	out := &maco.Comic{
 		Description:        in.Description,
 		DiamondCode:        in.DiamondCode,
 		DigitalID:          in.DigitalID,
@@ -533,7 +533,7 @@ func convertComic(in *marvel.Comic) (*m27r.Comic, error) {
 	}
 
 	for _, item := range in.Dates {
-		out.Dates = append(out.Dates, &m27r.ComicDate{
+		out.Dates = append(out.Dates, &maco.ComicDate{
 			Date: item.Date,
 			Type: item.Type,
 		})
@@ -549,7 +549,7 @@ func convertComic(in *marvel.Comic) (*m27r.Comic, error) {
 	}
 
 	for _, item := range in.Prices {
-		out.Prices = append(out.Prices, &m27r.ComicPrice{
+		out.Prices = append(out.Prices, &maco.ComicPrice{
 			Price: item.Price,
 			Type:  item.Type,
 		})
@@ -565,7 +565,7 @@ func convertComic(in *marvel.Comic) (*m27r.Comic, error) {
 	}
 
 	for _, item := range in.TextObjects {
-		out.TextObjects = append(out.TextObjects, &m27r.TextObject{
+		out.TextObjects = append(out.TextObjects, &maco.TextObject{
 			Language: item.Language,
 			Text:     item.Text,
 			Type:     item.Type,
@@ -573,7 +573,7 @@ func convertComic(in *marvel.Comic) (*m27r.Comic, error) {
 	}
 
 	for _, url := range in.URLs {
-		out.URLs = append(out.URLs, &m27r.URL{
+		out.URLs = append(out.URLs, &maco.URL{
 			Type: url.Type,
 			URL:  strings.Replace(strings.Split(url.URL, "?")[0], "http://", "https://", 1),
 		})

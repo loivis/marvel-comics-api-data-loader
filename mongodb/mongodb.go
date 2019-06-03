@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/loivis/marvel-comics-api-data-loader/m27r"
+	"github.com/loivis/marvel-comics-api-data-loader/maco"
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -109,11 +109,11 @@ func (m *MongoDB) IncompleteIDs(ctx context.Context, collection string) ([]int, 
 	return ids, nil
 }
 
-func (m *MongoDB) SaveCharacters(ctx context.Context, chars []*m27r.Character) error {
+func (m *MongoDB) SaveCharacters(ctx context.Context, chars []*maco.Character) error {
 	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
 	defer cancel()
 
-	var docs []m27r.Doc
+	var docs []maco.Doc
 	for _, char := range chars {
 		docs = append(docs, char)
 	}
@@ -121,11 +121,11 @@ func (m *MongoDB) SaveCharacters(ctx context.Context, chars []*m27r.Character) e
 	return m.saveMany(ctx, ColCharacters, docs)
 }
 
-func (m *MongoDB) SaveComics(ctx context.Context, comics []*m27r.Comic) error {
+func (m *MongoDB) SaveComics(ctx context.Context, comics []*maco.Comic) error {
 	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
 	defer cancel()
 
-	var docs []m27r.Doc
+	var docs []maco.Doc
 	for _, comic := range comics {
 		docs = append(docs, comic)
 	}
@@ -133,11 +133,11 @@ func (m *MongoDB) SaveComics(ctx context.Context, comics []*m27r.Comic) error {
 	return m.saveMany(ctx, ColComics, docs)
 }
 
-func (m *MongoDB) SaveCreators(ctx context.Context, creators []*m27r.Creator) error {
+func (m *MongoDB) SaveCreators(ctx context.Context, creators []*maco.Creator) error {
 	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
 	defer cancel()
 
-	var docs []m27r.Doc
+	var docs []maco.Doc
 	for _, creator := range creators {
 		docs = append(docs, creator)
 	}
@@ -145,11 +145,11 @@ func (m *MongoDB) SaveCreators(ctx context.Context, creators []*m27r.Creator) er
 	return m.saveMany(ctx, ColCreators, docs)
 }
 
-func (m *MongoDB) SaveEvents(ctx context.Context, events []*m27r.Event) error {
+func (m *MongoDB) SaveEvents(ctx context.Context, events []*maco.Event) error {
 	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
 	defer cancel()
 
-	var docs []m27r.Doc
+	var docs []maco.Doc
 	for _, event := range events {
 		docs = append(docs, event)
 	}
@@ -157,11 +157,11 @@ func (m *MongoDB) SaveEvents(ctx context.Context, events []*m27r.Event) error {
 	return m.saveMany(ctx, ColEvents, docs)
 }
 
-func (m *MongoDB) SaveSeries(ctx context.Context, series []*m27r.Series) error {
+func (m *MongoDB) SaveSeries(ctx context.Context, series []*maco.Series) error {
 	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
 	defer cancel()
 
-	var docs []m27r.Doc
+	var docs []maco.Doc
 	for _, s := range series {
 		docs = append(docs, s)
 	}
@@ -169,11 +169,11 @@ func (m *MongoDB) SaveSeries(ctx context.Context, series []*m27r.Series) error {
 	return m.saveMany(ctx, ColSeries, docs)
 }
 
-func (m *MongoDB) SaveStories(ctx context.Context, stories []*m27r.Story) error {
+func (m *MongoDB) SaveStories(ctx context.Context, stories []*maco.Story) error {
 	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
 	defer cancel()
 
-	var docs []m27r.Doc
+	var docs []maco.Doc
 	for _, s := range stories {
 		docs = append(docs, s)
 	}
@@ -181,7 +181,7 @@ func (m *MongoDB) SaveStories(ctx context.Context, stories []*m27r.Story) error 
 	return m.saveMany(ctx, ColStories, docs)
 }
 
-func (m *MongoDB) saveMany(ctx context.Context, collection string, docs []m27r.Doc) error {
+func (m *MongoDB) saveMany(ctx context.Context, collection string, docs []maco.Doc) error {
 	if len(docs) == 0 {
 		log.Info().Msg("no docs to save")
 		return nil
@@ -222,20 +222,20 @@ func (m *MongoDB) saveMany(ctx context.Context, collection string, docs []m27r.D
 	return nil
 }
 
-func (m *MongoDB) SaveOne(ctx context.Context, doc m27r.Doc) error {
+func (m *MongoDB) SaveOne(ctx context.Context, doc maco.Doc) error {
 	var collection string
 	switch doc.(type) {
-	case *m27r.Character:
+	case *maco.Character:
 		collection = ColCharacters
-	case *m27r.Comic:
+	case *maco.Comic:
 		collection = ColComics
-	case *m27r.Creator:
+	case *maco.Creator:
 		collection = ColCreators
-	case *m27r.Event:
+	case *maco.Event:
 		collection = ColEvents
-	case *m27r.Series:
+	case *maco.Series:
 		collection = ColSeries
-	case *m27r.Story:
+	case *maco.Story:
 		collection = ColStories
 	default:
 		return fmt.Errorf("unsupported type: %T", doc)
@@ -299,13 +299,13 @@ func (m *MongoDB) getAllIds(ctx context.Context, collection string) ([]int, erro
 	return ids, nil
 }
 
-func diff(ids []int, docs []m27r.Doc) []m27r.Doc {
+func diff(ids []int, docs []maco.Doc) []maco.Doc {
 	m := make(map[int]struct{}, len(ids))
 	for i := range ids {
 		m[ids[i]] = struct{}{}
 	}
 
-	var r []m27r.Doc
+	var r []maco.Doc
 	seen := map[int]struct{}{}
 	for i := range docs {
 		if _, ok := m[docs[i].Identify()]; ok {

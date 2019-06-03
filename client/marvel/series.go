@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/loivis/marvel-comics-api-data-loader/m27r"
+	"github.com/loivis/marvel-comics-api-data-loader/maco"
 )
 
 // GetSeries returns the series of specified id with given Params.
 func (c *Client) GetSeriesSingle(ctx context.Context, id int) (*Series, error) {
-	resp, err := c.get(ctx, &Params{typ: m27r.TypeSeries, id: &id})
+	resp, err := c.get(ctx, &Params{typ: maco.TypeSeries, id: &id})
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func (c *Client) GetSeries(ctx context.Context, params *Params) ([]*Series, erro
 		return nil, errors.New("params is nil")
 	}
 
-	params.typ = m27r.TypeSeries
+	params.typ = maco.TypeSeries
 
 	return c.getSeries(ctx, params)
 }
@@ -50,9 +50,9 @@ func (c *Client) GetCharacterSeries(ctx context.Context, id int, params *Params)
 		return nil, errors.New("params is nil")
 	}
 
-	params.typ = m27r.TypeCharacters
+	params.typ = maco.TypeCharacters
 	params.id = &id
-	params.subtype = m27r.TypeSeries
+	params.subtype = maco.TypeSeries
 
 	return c.getSeries(ctx, params)
 }
@@ -63,9 +63,9 @@ func (c *Client) GetComicSeries(ctx context.Context, id int, params *Params) ([]
 		return nil, errors.New("params is nil")
 	}
 
-	params.typ = m27r.TypeComics
+	params.typ = maco.TypeComics
 	params.id = &id
-	params.subtype = m27r.TypeSeries
+	params.subtype = maco.TypeSeries
 
 	return c.getSeries(ctx, params)
 }
@@ -76,9 +76,9 @@ func (c *Client) GetCreatorSeries(ctx context.Context, id int, params *Params) (
 		return nil, errors.New("params is nil")
 	}
 
-	params.typ = m27r.TypeCreators
+	params.typ = maco.TypeCreators
 	params.id = &id
-	params.subtype = m27r.TypeSeries
+	params.subtype = maco.TypeSeries
 
 	return c.getSeries(ctx, params)
 }
@@ -89,9 +89,9 @@ func (c *Client) GetEventSeries(ctx context.Context, id int, params *Params) ([]
 		return nil, errors.New("params is nil")
 	}
 
-	params.typ = m27r.TypeEvents
+	params.typ = maco.TypeEvents
 	params.id = &id
-	params.subtype = m27r.TypeSeries
+	params.subtype = maco.TypeSeries
 
 	return c.getSeries(ctx, params)
 }
@@ -102,9 +102,9 @@ func (c *Client) GetStorySeries(ctx context.Context, id int, params *Params) ([]
 		return nil, errors.New("params is nil")
 	}
 
-	params.typ = m27r.TypeStories
+	params.typ = maco.TypeStories
 	params.id = &id
-	params.subtype = m27r.TypeSeries
+	params.subtype = maco.TypeSeries
 
 	return c.getSeries(ctx, params)
 }

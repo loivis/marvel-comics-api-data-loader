@@ -11,7 +11,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/loivis/marvel-comics-api-data-loader/client/marvel"
-	"github.com/loivis/marvel-comics-api-data-loader/m27r"
+	"github.com/loivis/marvel-comics-api-data-loader/maco"
 )
 
 func (p *Processor) loadSeries(ctx context.Context) error {
@@ -40,7 +40,7 @@ func (p *Processor) loadSeries(ctx context.Context) error {
 }
 
 func (p *Processor) loadAllSeriesWithBasicInfo(ctx context.Context) error {
-	remote, err := p.mclient.GetCount(ctx, m27r.TypeSeries)
+	remote, err := p.mclient.GetCount(ctx, maco.TypeSeries)
 	if err != nil {
 		return fmt.Errorf("error fetching series count: %v", err)
 	}
@@ -66,18 +66,18 @@ func (p *Processor) loadMissingSeries(ctx context.Context, starting, count int) 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	seriesCh := make(chan *m27r.Series, p.concurrency*p.limit)
+	seriesCh := make(chan *maco.Series, p.concurrency*p.limit)
 	conCh := make(chan struct{}, p.concurrency)
 	errCh := make(chan error, 1)
 	doneCh := make(chan struct{})
 
 	go func() {
-		var series []*m27r.Series
+		var series []*maco.Series
 		defer func() {
 			doneCh <- struct{}{}
 		}()
 
-		batchSave := func(series []*m27r.Series) error {
+		batchSave := func(series []*maco.Series) error {
 			err := retry.Do(func() error {
 				return p.store.SaveSeries(ctx, series)
 			})
@@ -99,7 +99,7 @@ func (p *Processor) loadMissingSeries(ctx context.Context, starting, count int) 
 					errCh <- err
 					break
 				}
-				series = []*m27r.Series{}
+				series = []*maco.Series{}
 			}
 		}
 
@@ -231,7 +231,7 @@ func (p *Processor) complementAllSeries(ctx context.Context) error {
 	return nil
 }
 
-func (p *Processor) getSeriesWithFullInfo(ctx context.Context, id int) (*m27r.Series, error) {
+func (p *Processor) getSeriesWithFullInfo(ctx context.Context, id int) (*maco.Series, error) {
 	series, err := p.mclient.GetSeriesSingle(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching series %d: %v", id, err)
@@ -527,8 +527,8 @@ func (p *Processor) getSeriesStories(ctx context.Context, id, count int) ([]*mar
 	return stories, nil
 }
 
-func convertSeries(in *marvel.Series) (*m27r.Series, error) {
-	out := &m27r.Series{
+func convertSeries(in *marvel.Series) (*maco.Series, error) {
+	out := &maco.Series{
 		Description: in.Description,
 		EndYear:     in.EndYear,
 		ID:          in.ID,
@@ -601,7 +601,7 @@ func convertSeries(in *marvel.Series) (*m27r.Series, error) {
 	}
 
 	for _, url := range in.URLs {
-		out.URLs = append(out.URLs, &m27r.URL{
+		out.URLs = append(out.URLs, &maco.URL{
 			Type: url.Type,
 			URL:  strings.Replace(strings.Split(url.URL, "?")[0], "http://", "https://", 1),
 		})

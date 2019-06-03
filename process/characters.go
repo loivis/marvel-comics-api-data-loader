@@ -11,7 +11,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/loivis/marvel-comics-api-data-loader/client/marvel"
-	"github.com/loivis/marvel-comics-api-data-loader/m27r"
+	"github.com/loivis/marvel-comics-api-data-loader/maco"
 )
 
 func (p *Processor) loadCharacters(ctx context.Context) error {
@@ -35,13 +35,13 @@ func (p *Processor) loadCharacters(ctx context.Context) error {
 }
 
 func (p *Processor) loadAllCharactersWithBasicInfo(ctx context.Context) error {
-	remote, err := p.mclient.GetCount(ctx, m27r.TypeCharacters)
+	remote, err := p.mclient.GetCount(ctx, maco.TypeCharacters)
 	if err != nil {
 		return fmt.Errorf("error fetching character count: %v", err)
 	}
 	log.Info().Str("type", "character").Int("count", remote).Msg("character count from api")
 
-	existing, err := p.store.GetCount(ctx, m27r.TypeCharacters)
+	existing, err := p.store.GetCount(ctx, maco.TypeCharacters)
 	if err != nil {
 		return err
 	}
@@ -61,18 +61,18 @@ func (p *Processor) loadMissingCharacters(ctx context.Context, starting, count i
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	charCh := make(chan *m27r.Character, p.concurrency*p.limit)
+	charCh := make(chan *maco.Character, p.concurrency*p.limit)
 	conCh := make(chan struct{}, p.concurrency)
 	errCh := make(chan error, 1)
 	doneCh := make(chan struct{})
 
 	go func() {
-		var characters []*m27r.Character
+		var characters []*maco.Character
 		defer func() {
 			doneCh <- struct{}{}
 		}()
 
-		batchSave := func(characters []*m27r.Character) error {
+		batchSave := func(characters []*maco.Character) error {
 			err := retry.Do(func() error {
 				return p.store.SaveCharacters(ctx, characters)
 			})
@@ -94,7 +94,7 @@ func (p *Processor) loadMissingCharacters(ctx context.Context, starting, count i
 					errCh <- err
 					break
 				}
-				characters = []*m27r.Character{}
+				characters = []*maco.Character{}
 			}
 		}
 
@@ -171,7 +171,7 @@ func (p *Processor) loadMissingCharacters(ctx context.Context, starting, count i
 }
 
 func (p *Processor) complementAllCharacters(ctx context.Context) error {
-	ids, err := p.store.IncompleteIDs(ctx, m27r.TypeCharacters)
+	ids, err := p.store.IncompleteIDs(ctx, maco.TypeCharacters)
 	if err != nil {
 		return fmt.Errorf("error get imcomplete character ids: %v", err)
 	}
@@ -226,7 +226,7 @@ func (p *Processor) complementAllCharacters(ctx context.Context) error {
 	return nil
 }
 
-func (p *Processor) getCharacterWithFullInfo(ctx context.Context, id int) (*m27r.Character, error) {
+func (p *Processor) getCharacterWithFullInfo(ctx context.Context, id int) (*maco.Character, error) {
 	char, err := p.mclient.GetCharacter(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching character %d: %v", id, err)
@@ -476,8 +476,8 @@ func (p *Processor) getCharacterStories(ctx context.Context, id, count int) ([]*
 	return stories, nil
 }
 
-func convertCharacter(in *marvel.Character) (*m27r.Character, error) {
-	out := &m27r.Character{
+func convertCharacter(in *marvel.Character) (*maco.Character, error) {
+	out := &maco.Character{
 		Description: in.Description,
 		ID:          in.ID,
 		Modified:    in.Modified,
@@ -522,7 +522,7 @@ func convertCharacter(in *marvel.Character) (*m27r.Character, error) {
 	}
 
 	for _, url := range in.URLs {
-		out.URLs = append(out.URLs, &m27r.URL{
+		out.URLs = append(out.URLs, &maco.URL{
 			Type: url.Type,
 			URL:  strings.Replace(strings.Split(url.URL, "?")[0], "http://", "https://", 1),
 		})
