@@ -47,8 +47,8 @@ const (
 )
 
 type collection struct {
-	Offset int
-	IDs    []int
+	Offset int   `json:"offset,omitempty"`
+	IDs    []int `json:"ids,omitempty"`
 }
 
 func init() {
