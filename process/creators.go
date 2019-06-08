@@ -480,7 +480,7 @@ func (p *Processor) getCreatorStories(ctx context.Context, id, count int) ([]*ma
 
 func convertCreator(in *marvel.Creator) (*maco.Creator, error) {
 	out := &maco.Creator{
-		FirtName:   in.FirstName,
+		FirstName:  in.FirstName,
 		FullName:   in.FullName,
 		ID:         in.ID,
 		LastName:   in.LastName,

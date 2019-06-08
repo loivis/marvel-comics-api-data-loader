@@ -321,7 +321,7 @@ type Story struct {
 	Events        *EventList
 	ID            int
 	Modified      string
-	Originalissue *ComicSummary
+	OriginalIssue *ComicSummary
 	ResourceURI   string
 	Series        *SeriesList
 	Thumbnail     *Image

@@ -61,7 +61,7 @@ type Creator struct {
 
 	Comics     []int  `bson:"comics"` // list of comic id
 	Events     []int  `bson:"events"` // list of event id
-	FirtName   string `bson:"firt_name,omitempty"`
+	FirstName  string `bson:"first_name,omitempty"`
 	FullName   string `bson:"full_name,omitempty"`
 	ID         int    `bson:"id"`
 	LastName   string `bson:"last_name,omitempty"`
@@ -137,7 +137,7 @@ type Story struct {
 	Events        []int  `bson:"events"` // list of event id
 	ID            int    `bson:"id"`
 	Modified      string `bson:"modified,omitempty"`
-	Originalissue int    `json:"original_issue"`      // comic id
+	OriginalIssue int    `json:"original_issue"`      // comic id
 	Series        []int  `bson:"series"`              // list of series id
 	Thumbnail     string `bson:"thumbnail,omitempty"` // url of thumbnail image
 	Title         string `bson:"title,omitempty"`

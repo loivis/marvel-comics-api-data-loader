@@ -568,12 +568,12 @@ func convertStory(in *marvel.Story) (*maco.Story, error) {
 		out.Events = append(out.Events, id)
 	}
 
-	if in.Originalissue != nil {
-		id, err := idFromURL(in.Originalissue.ResourceURI)
+	if in.OriginalIssue != nil {
+		id, err := idFromURL(in.OriginalIssue.ResourceURI)
 		if err != nil {
-			return nil, fmt.Errorf("error get id from %q: %v", in.Originalissue.ResourceURI, err)
+			return nil, fmt.Errorf("error get id from %q: %v", in.OriginalIssue.ResourceURI, err)
 		}
-		out.Originalissue = id
+		out.OriginalIssue = id
 	}
 
 	for _, item := range in.Series.Items {
